@@ -19,10 +19,43 @@ const updateUserWallet = async (userId, walletAmount = 0) => {
     throw new Error(false);
   }
 };
+const createUser = async (userBody) => {
+  const user = await User.create(userBody);
+  return user;
+};
+const getAdminEmail = async (email) => {
+  const user = User.findOne({ email: email?.toLowerCase().trim(), role: 'admin' });
+  return user;
+};
+const getUserByEmail = async (email) => {
+  const user = User.findOne({ email: email?.toLowerCase().trim() });
+  return user;
+};
+const getUserByPhone = async (phone) => {
+  const phoneDate = await User.findOne({ phone: `${phone?.toString()}` });
+  return phoneDate;
+};
+const updateUserById = async (userId, updateBody) => {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+  }
+  Object.assign(user, updateBody);
+  await user.save();
+  return user;
+};
 
 const userService = {
   getUserById,
   updateUserWallet,
+  getAdminEmail,
+  getUserByEmail,
+  getUserByPhone,
+  updateUserById,
+  createUser
 };
 
 export default userService;
