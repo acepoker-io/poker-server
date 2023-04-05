@@ -20,9 +20,27 @@ const updateUserWallet = async (userId, walletAmount = 0) => {
   }
 };
 
+const createUser = async (userBody) => {
+  const checkExist = await User.findOne({ googleId: userBody.googleId });
+  if (checkExist) return checkExist;
+  console.log("userBody", userBody);
+  const user = await User.create(userBody);
+  return user;
+};
+
+const getAdminEmail = async (email) => {
+  const user = User.findOne({
+    email: email?.toLowerCase().trim(),
+    role: "admin",
+  });
+  return user;
+};
+
 const userService = {
   getUserById,
   updateUserWallet,
+  getAdminEmail,
+  createUser,
 };
 
 export default userService;

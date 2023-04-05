@@ -81,6 +81,10 @@ const userSchema = mongoose.Schema(
       default: false,
     },
     profile: { type: String },
+    blockTime: {
+      type: Date,
+      default: new Date(),
+    },
   },
 
   {
