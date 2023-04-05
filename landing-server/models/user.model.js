@@ -22,7 +22,6 @@ const userSchema = mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
       trim: true,
     },
     date: {
@@ -81,6 +80,10 @@ const userSchema = mongoose.Schema(
       default: false,
     },
     profile: { type: String },
+    blockTime: {
+      type: Date,
+      default: new Date(),
+    },
   },
 
   {
