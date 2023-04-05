@@ -301,7 +301,7 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
 
 app.use("/poker", auth(), pokerRoute(io));
 app.use("/tournament", auth(), tournamentRoute);
-app.use("/v1/admin/auth", adminRoute);
+app.use("/v1/admin/auth", adminRoute(io));
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 

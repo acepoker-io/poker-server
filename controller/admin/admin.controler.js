@@ -15,6 +15,8 @@ import User from "../../landing-server/models/user.model.js";
 import adminService from "../../service/admin/admin.service.js";
 // import eventEmitter from "../../landing-server/utils/eventEmit.js";
 import userService from "../../service/user.service.js";
+import roomModel from "../../models/room.js";
+import eventEmitter from "../../landing-server/utils/eventEmit.js";
 
 export const adminLogin = catchAsync(async (req, res, next) => {
   const {
@@ -92,11 +94,11 @@ export const getAllTransaction = catchAsync(async (req, res, next) => {
   return res.status(200).send(response);
 });
 
-// export const updateWallet = catchAsync(async (req, res, next) => {
-//   const response = await adminService.updateUserWallet(req.params.id, req.body);
-//   eventEmitter.emit("notifyUserAdminUpdate", req.params.id);
-//   return res.status(200).send(response);
-// });
+export const updateWallet = catchAsync(async (req, res, next) => {
+  const response = await adminService.updateUserWallet(req.params.id, req.body);
+  eventEmitter.emit("notifyUserAdminUpdate", req.params.id);
+  return res.status(200).send(response);
+});
 
 export const resetPassword = async (req, res) => {
   console.log("reset password", req.body);
@@ -137,59 +139,175 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// export const getPokerTable = async (req, res) => {
-//   console.log("getPokerTable", req.query);
-//   const { tournament, skip, pageLimit, keyword } = req.query;
-//   try {
-//     let searchqrery = "";
-//     if (keyword && keyword !== "") {
-//       searchqrery = {
-//         gameName: { $regex: keyword, $options: "i" },
-//       };
-//     } else {
-//       searchqrery = {};
-//     }
+export const getPokerTable = async (req, res) => {
+  console.log("getPokerTable", req.query);
+  const { tournament, skip, pageLimit, keyword } = req.query;
+  try {
+    let searchqrery = "";
+    if (keyword && keyword !== "") {
+      searchqrery = {
+        gameName: { $regex: keyword, $options: "i" },
+      };
+    } else {
+      searchqrery = {};
+    }
 
-//     let queryObject = {};
-//     if (tournament === "true") {
-//       console.log("true executed");
-//       queryObject = {
-//         $and: [{ tournament: { $ne: null } }],
-//       };
-//     } else {
-//       console.log("false executed");
-//       queryObject = { $and: [{ tournament: null }, searchqrery] };
-//     }
-//     console.log(queryObject, tournament);
-//     const rooms = await roomModel
-//       .find(queryObject)
-//       .skip(Number(skip))
-//       .limit(Number(pageLimit));
-//     const count = await roomModel.countDocuments(queryObject);
-//     console.log("count", count);
-//     res.status(200).json({
-//       rooms,
-//       count,
-//       succeess: true,
-//     });
-//   } catch (err) {
-//     console.log("error in getPokerTables", err);
-//   }
-// };
-// export const getAllUsersForInvite = async (req, res) => {
-//   try {
-//     const allUsers = await User.find({
-//       _id: { $ne: req.user._id },
-//       isRegistrationComplete: true,
-//     }).select("_id username");
-//     return res.status(200).json({
-//       allUsers,
-//     });
-//   } catch (error) {
-//     console.log("error in Get All user", error);
-//     res.status(500).send({ message: "Internal server error" });
-//   }
-// };
+    let queryObject = {};
+    if (tournament === "true") {
+      console.log("true executed");
+      queryObject = {
+        $and: [{ tournament: { $ne: null } }],
+      };
+    } else {
+      console.log("false executed");
+      queryObject = { $and: [{ tournament: null }, searchqrery] };
+    }
+    console.log(queryObject, tournament);
+    const rooms = await roomModel
+      .find(queryObject)
+      .skip(Number(skip))
+      .limit(Number(pageLimit));
+    const count = await roomModel.countDocuments(queryObject);
+    console.log("count", count);
+    res.status(200).json({
+      rooms,
+      count,
+      succeess: true,
+    });
+  } catch (err) {
+    console.log("error in getPokerTables", err);
+  }
+};
+
+export const getAllUsersForInvite = async (req, res) => {
+  try {
+    const allUsers = await User.find({
+      _id: { $ne: req.user._id },
+      isRegistrationComplete: true,
+    }).select("_id username");
+    return res.status(200).json({
+      allUsers,
+    });
+  } catch (error) {
+    console.log("error in Get All user", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
+
+export const createTable = async (req, res, io) => {
+  try {
+    const {
+      gameName,
+      public: isPublic,
+      minchips,
+      maxchips,
+      autohand,
+      invitedUsers,
+      sitInAmount,
+    } = req.body;
+    const userData = req.user;
+    const findRoom = await roomModel.findOne({
+      gameName: gameName?.toLowerCase(),
+    });
+    if (findRoom) {
+      return res.status(403).send({ message: "Game name is already taken" });
+    }
+    const { /* username, wallet, email, */ _id /* avatar, profile */ } =
+      userData;
+    const timer = 15;
+
+    // const checkInGame = await pokerTournamentService.checkIfUserInGame(userData._id);
+
+    // if (checkInGame) {
+    //   return res.status(403).send({ message: "You are already in a game." });
+    // }
+
+    // if (!sitInAmount) {
+    //   return res.status(403).send({ message: "Sit in amount is required" });
+    // }
+
+    // if (parseInt(sitInAmount) < 100) {
+    //   return res
+    //     .status(403)
+    //     .send({ message: "Minimum 100 coins need for sit in amount" });
+    // }
+
+    // if (sitInAmount > wallet) {
+    //   return res.status(403).send({ message: "You don't have enough balance" });
+    // }
+
+    // if (checkInGame) {
+    //   return res.status(403).send({ message: "You are already in a game." });
+    // }
+
+    const bigBlind = parseInt(minchips) * 2;
+    const invitetedPlayerUserId =
+      invitedUsers?.length && invitedUsers?.map((el) => el.value);
+    const roomData = await roomModel.create({
+      gameName: gameName?.toLowerCase(),
+      gameType: "poker",
+      autoNextHand: autohand,
+      invPlayers: invitetedPlayerUserId,
+      public: isPublic,
+      smallBlind: parseInt(minchips),
+      bigBlind,
+      timer,
+      // players: [
+      //   {
+      //     name: username,
+      //     userid: _id,
+      //     id: _id,
+      //     photoURI: avatar ? avatar : profile ? profile : img,
+      //     wallet: sitInAmount,
+      //     position: 0,
+      //     missedSmallBlind: false,
+      //     missedBigBlind: false,
+      //     forceBigBlind: false,
+      //     playing: true,
+      //     initialCoinBeforeStart: sitInAmount,
+      //     gameJoinedAt: new Date(),
+      //     hands: [],
+      //   },
+      // ],
+    });
+    const getAllRunningRoom = await roomModel
+      .find({ public: true })
+      .populate("players.userid");
+    io.emit("tableCreate", { tables: getAllRunningRoom });
+    // await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
+
+    if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId?.length) {
+      const sendMessageToInvitedUsers = [
+        ...invitetedPlayerUserId?.map((el) => {
+          return {
+            sender: _id,
+            receiver: el,
+            message: `<a href='${process.env.CLIENTURL}/table?tableid=${roomData._id}&gamecollection=poker#/'>Click here</a> to play poker with me.`,
+          };
+        }),
+      ];
+
+      const sendNotificationToInvitedUsers = [
+        ...invitetedPlayerUserId?.map((el) => {
+          return {
+            sender: _id,
+            receiver: el,
+            message: `has invited you to play poker.`,
+            url: `${process.env.CLIENTURL}/table?tableid=${roomData._id}&gamecollection=poker#/`,
+          };
+        }),
+      ];
+
+      await Message.insertMany(sendMessageToInvitedUsers);
+      await Notification.insertMany(sendNotificationToInvitedUsers);
+    }
+
+    res.status(200).send({ roomData });
+  } catch (error) {
+    console.log("Eroor In create Table", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
 
 // export const CreateTournament = catchAsync(async (req, res,next) => {
 //   console.log('Created Tournament');
@@ -204,8 +322,9 @@ const adminController = {
   getAllUsers,
   getAllTransaction,
   resetPassword,
+  createTable,
   // checkAdmin,
   // dashboardCount,
-  // getAllUsersForInvite,
+  getAllUsersForInvite,
 };
 export default adminController;

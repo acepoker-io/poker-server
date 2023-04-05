@@ -8,6 +8,10 @@ import {
   getAllUsers,
   getAllTransaction,
   resetPassword,
+  getAllUsersForInvite,
+  getPokerTable,
+  createTable,
+  updateWallet,
 } from "../controller/admin/admin.controler.js";
 import authValidation from "../validation/auth.validation.js";
 import validate from "../middlewares/validate.js";
@@ -15,18 +19,30 @@ import auth from "../landing-server/middlewares/auth.js";
 
 const router = express.Router();
 
-router.post("/login", validate(authValidation.adminLogin), adminLogin);
+const adimRoute = (io) => {
+  router.post("/login", validate(authValidation.adminLogin), adminLogin);
 
-router.get("/getLettestUser", getLettestUser);
+  router.get("/getLettestUser", getLettestUser);
 
-router.get("/dashboardCount", auth(), dashboardCount);
+  router.get("/dashboardCount", auth(), dashboardCount);
 
-router.get("/check-admin", auth(), checkAdmin);
+  router.get("/check-admin", auth(), checkAdmin);
 
-router.get("/getAllUsers", getAllUsers);
+  router.get("/getAllUsers", getAllUsers);
 
-router.get("/allTransaction", auth(), getAllTransaction);
+  router.get("/allTransaction", auth(), getAllTransaction);
 
-router.put("/reset-password", auth(), resetPassword);
+  router.put("/reset-password", auth(), resetPassword);
 
-export default router;
+  router.get("/users-forInvite", auth(), getAllUsersForInvite);
+
+  router.get("/pokerTables", auth(), getPokerTable);
+
+  router.put("/update-wallet/:id", auth(), updateWallet);
+
+  router.post("/createTable", auth(), (req, res) => createTable(req, res, io));
+
+  return router;
+};
+
+export default adimRoute;
