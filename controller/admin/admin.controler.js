@@ -14,7 +14,7 @@ import catchAsync from "../../landing-server/utils/catchAsync.js";
 import User from "../../landing-server/models/user.model.js";
 import adminService from "../../service/admin/admin.service.js";
 // import eventEmitter from "../../landing-server/utils/eventEmit.js";
-// import userService from "../../service/user.service.js";
+import userService from "../../service/user.service.js";
 
 export const adminLogin = catchAsync(async (req, res, next) => {
   const {
@@ -43,29 +43,29 @@ export const getLettestUser = catchAsync(async (req, res, next) => {
   res.send({ users });
 });
 
-// export const getAllUsers = catchAsync(async (req, res, next) => {
-//   const filter = await adminService.getAllUsers(req.query);
-//   res.send({ users: filter.users, count: filter.count });
-// });
+export const getAllUsers = catchAsync(async (req, res, next) => {
+  const filter = await adminService.getAllUsers(req.query);
+  res.send({ users: filter.users, count: filter.count });
+});
 
-// export const checkAdmin = catchAsync(async (req, res, next) => {
-//   if (req.user) {
-//     // console.log('user ==>>', req.user);
-//     return res.status(200).send({
-//       user: {
-//         username: req.user.username,
-//         email: req.user.email,
-//         id: req.user.id,
-//         profile: req.user.profile,
-//         role: req.user.role,
-//         firstName: req.user.firstName,
-//         lastName: req.user.lastName,
-//         phone: req.user.phone,
-//       },
-//     });
-//   }
-//   throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized user");
-// });
+export const checkAdmin = catchAsync(async (req, res, next) => {
+  if (req.user) {
+    // console.log('user ==>>', req.user);
+    return res.status(200).send({
+      user: {
+        username: req.user.username,
+        email: req.user.email,
+        id: req.user.id,
+        profile: req.user.profile,
+        role: req.user.role,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        phone: req.user.phone,
+      },
+    });
+  }
+  throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized user");
+});
 
 // export const blockUser = catchAsync(async (req, res, next) => {
 //   const block = await adminService.blockUser(req.params.id);
@@ -87,10 +87,10 @@ export const dashboardCount = catchAsync(async (req, res, next) => {
 //   return res.status(200).send(response);
 // });
 
-// export const getAllTransaction = catchAsync(async (req, res, next) => {
-//   const response = await adminService.allTransaction(req.query);
-//   return res.status(200).send(response);
-// });
+export const getAllTransaction = catchAsync(async (req, res, next) => {
+  const response = await adminService.allTransaction(req.query);
+  return res.status(200).send(response);
+});
 
 // export const updateWallet = catchAsync(async (req, res, next) => {
 //   const response = await adminService.updateUserWallet(req.params.id, req.body);
@@ -98,44 +98,44 @@ export const dashboardCount = catchAsync(async (req, res, next) => {
 //   return res.status(200).send(response);
 // });
 
-// export const resetPassword = async (req, res) => {
-//   console.log("reset password", req.body);
-//   const { email, currentPassword, newPassword } = req.body;
-//   try {
-//     const admin = await User.findOne({ email });
-//     // console.log(admin);
-//     if (admin) {
-//       const pswd = await admin?.isPasswordMatch(currentPassword);
-//       console.log(pswd);
-//       if (pswd) {
-//         await userService.updateUserById(admin._id, { password: newPassword });
-//         const userDetail = await User.findOne({ _id: admin._id });
-//         res.status(200).json({
-//           code: 200,
-//           msg: "Your Password is changed successfully",
-//           userDetail,
-//         });
-//         return;
-//       }
-//       res.status(404).json({
-//         msg: "Your old password is wrong",
-//       });
-//       return;
-//       // throw new ApiError(httpStatus.NOT_FOUND, 'Your old password is wrong');
-//     }
-//     res.status(404).json({
-//       msg: "User not found",
-//     });
-//     return;
-//     // throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
-//   } catch (err) {
-//     console.log("error in reset password", err);
+export const resetPassword = async (req, res) => {
+  console.log("reset password", req.body);
+  const { email, currentPassword, newPassword } = req.body;
+  try {
+    const admin = await User.findOne({ email });
+    // console.log(admin);
+    if (admin) {
+      const pswd = await admin?.isPasswordMatch(currentPassword);
+      console.log(pswd);
+      if (pswd) {
+        await userService.updateUserById(admin._id, { password: newPassword });
+        const userDetail = await User.findOne({ _id: admin._id });
+        res.status(200).json({
+          code: 200,
+          msg: "Your Password is changed successfully",
+          userDetail,
+        });
+        return;
+      }
+      res.status(404).json({
+        msg: "Your old password is wrong",
+      });
+      return;
+      // throw new ApiError(httpStatus.NOT_FOUND, 'Your old password is wrong');
+    }
+    res.status(404).json({
+      msg: "User not found",
+    });
+    return;
+    // throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  } catch (err) {
+    console.log("error in reset password", err);
 
-//     res.status(404).json({
-//       msg: "Something went wrong",
-//     });
-//   }
-// };
+    res.status(404).json({
+      msg: "Something went wrong",
+    });
+  }
+};
 
 // export const getPokerTable = async (req, res) => {
 //   console.log("getPokerTable", req.query);
@@ -201,7 +201,9 @@ export const dashboardCount = catchAsync(async (req, res, next) => {
 const adminController = {
   adminLogin,
   getLettestUser,
-  // getAllUsers,
+  getAllUsers,
+  getAllTransaction,
+  resetPassword,
   // checkAdmin,
   // dashboardCount,
   // getAllUsersForInvite,
