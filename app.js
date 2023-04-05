@@ -15,6 +15,7 @@ import {
 } from "./landing-server/config/morgan.js";
 import pokerRoute from "./routes/pokerRoutes.js";
 import tournamentRoute from "./routes/tournamentRoutes.js";
+import adminRoute from "./routes/admin.route.js";
 import dotenv from "dotenv";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
@@ -300,6 +301,7 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
 
 app.use("/poker", auth(), pokerRoute(io));
 app.use("/tournament", auth(), tournamentRoute);
+app.use("/v1/admin/auth", adminRoute);
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 
