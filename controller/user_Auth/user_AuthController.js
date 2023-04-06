@@ -1,22 +1,24 @@
 import httpStatus from 'http-status';
 import multiparty from 'multiparty';
-import pick from '../utils/pick.js';
-import ApiError from '../utils/ApiError.js';
-import catchAsync from '../utils/catchAsync.js';
+import pick from '../../landing-server/utils/pick.js';
+import ApiError from '../../landing-server/utils/ApiError.js';
+import catchAsync from '../../landing-server/utils/catchAsync.js';
 import userService from '../../service/user.service.js';
-import KYCModel from '../models/kyc.model.js';
-import s3Service from '../services/s3.service.js';
-import logger from '../config/logger.js';
-import transactionModel from '../models/transaction.model.js';
+import s3Service from '../../service/s3.service.js';
+import tokenService from '../../service/token.service.js';
+// import logger from '../config/logger.js';
+import transactionModel from '../../models/transaction.js';
 // import Friends from '../models/friend.model.js';
-import User from '../models/user.model.js';
+import User from '../../landing-server/models/user.model.js';
 
 // import s3Service from '../services/s3.service.js';
 // import User from '../models/user.model.js';
 
 const createUser = catchAsync(async (req, res,next) => {
+  console.log("body data--->",req.body)
   const user = await userService.createUser(req.body);
-  res.status(httpStatus.CREATED).send(user);
+  const tokens = await tokenService.generateAuthTokens(user);
+  res.status(httpStatus.CREATED).send({user:user,token:tokens.access.token});
 });
 
 const getUsers = catchAsync(async (req, res,next) => {
@@ -210,30 +212,20 @@ const createKyc = catchAsync(async (req, res) => {
   });
 });
 
-export const login = catchAsync(async (req, res, next) => {
-  const { email, password, recaptchaResponse } = req.body;
-  if (!recaptchaResponse) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Recaptcha is not verified');
+ const loginWithMetamask = async (req, res) => {
+  try{
+    const { metaMaskAddress } = req.body;
+    const userData = await User.findOne({metaMaskAddress})
+    if(!userData){
+      return res.send({status:401, message:"Please provide detail"});
+    }
+    const tokens = await tokenService.generateAuthTokens(userData);
+    res.send({ user:userData, token:tokens.access.token,status:200 });
+  }catch(err){
+    throw new ApiError(500, 'Internal server error');
   }
-  const option = {
-    secret: config.recaptchaSecret,
-    response: recaptchaResponse,
-  };
-  const dd = await axios.post(`https://www.google.com/recaptcha/api/siteverify`, option, { params: option });
-  if (!dd.data.success) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Recaptcha is not verified');
-  }
-  const user = await authService.loginUserWithPhoneAndPassword(phone, password);
-  const tokens = await tokenService.generateAuthTokens(user);
-  const cookieTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'seconds');
-  res.cookie('token', tokens.access.token, {
-    domain: 'scrooge.casino',
-    path: '/',
-    httpOnly: false,
-    maxAge: cookieTokenExpires,
-  });
-  res.send({ user, tokens });
-});
+  
+};
 
 const userController = {
   createUser,
@@ -249,5 +241,6 @@ const userController = {
   checkUserInGame,
   getKycDetails,
   createKyc,
+  loginWithMetamask
 };
 export default userController;

@@ -42,9 +42,8 @@ const updateUserById = async (userId, updateBody) => {
 };
 
 const createUser = async (userBody) => {
-  const checkExist = await User.findOne({ googleId: userBody.googleId });
+  const checkExist = await User.findOne({ metaMaskAddress: userBody?.metaMaskAddress });
   if (checkExist) return checkExist;
-  console.log("userBody", userBody);
   const user = await User.create(userBody);
   return user;
 };

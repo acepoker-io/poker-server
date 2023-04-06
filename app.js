@@ -14,15 +14,15 @@ import {
   errorHandler as morganErrorHandler,
 } from "./landing-server/config/morgan.js";
 import pokerRoute from "./routes/pokerRoutes.js";
-import tournamentRoute from "./routes/tournamentRoutes.js";
+//import tournamentRoute from "./routes/tournamentRoutes.js";
 import adminRoute from "./routes/admin.route.js";
 import dotenv from "dotenv";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
-import User from "./landing-server/models/user.model";
-import returnCron from "./cron/cron";
-import tournamentModel from "./models/tournament";
-
+import User from "./landing-server/models/user.model.js";
+import returnCron from "./cron/cron.js";
+//import tournamentModel from "./models/tournament";
+import authRoutes from './routes/authRoutes.js'
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
@@ -36,9 +36,7 @@ returnCron(io);
 const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://poker.scrooge.casino",
-  "https://devpoker.scrooge.casino",
-  "https://betapoker.scrooge.casino",
+  "https://beta.wptpoker.io",
 ];
 const corsOptions = {
   origin: function (origin, callback) {
@@ -300,8 +298,9 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
 });
 
 app.use("/poker", auth(), pokerRoute(io));
-app.use("/tournament", auth(), tournamentRoute);
+// app.use("/tournament", auth(), tournamentRoute);
 app.use("/v1/admin/auth", adminRoute);
+app.use("/auth", authRoutes);
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 

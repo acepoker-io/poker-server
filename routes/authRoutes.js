@@ -1,15 +1,9 @@
 import express from "express";
-import {
-  getAllGame,
-  enterRoom,
-  getTournamentById,
-} from "../controller/tournamentController";
-import {createUser} from '../controller/user_Auth/user_AuthController'
+import user_AuthController from '../controller/user_Auth/user_AuthController.js'
 // import auth from "../landing-server/middlewares/auth";
 
 const router = express.Router();
-
-router.get("/register", createUser);
-router.get('/Login',getTournamentById)
+router.post("/register", user_AuthController.createUser);
+router.post("/loginWithMetamask", user_AuthController.loginWithMetamask);
 
 export default router;
