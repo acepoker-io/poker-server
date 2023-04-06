@@ -20,10 +20,30 @@ const updateUserWallet = async (userId, walletAmount = 0) => {
   }
 };
 
+const getUserByEmail = async (email) => {
+  const user = User.findOne({ email: email?.toLowerCase().trim() });
+  return user;
+};
+const getUserByPhone = async (phone) => {
+  const phoneDate = await User.findOne({ phone: `${phone?.toString()}` });
+  return phoneDate;
+};
+const updateUserById = async (userId, updateBody) => {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+  }
+  Object.assign(user, updateBody);
+  await user.save();
+  return user;
+};
+
 const createUser = async (userBody) => {
-  const checkExist = await User.findOne({ googleId: userBody.googleId });
+  const checkExist = await User.findOne({ metaMaskAddress: userBody?.metaMaskAddress });
   if (checkExist) return checkExist;
-  console.log("userBody", userBody);
   const user = await User.create(userBody);
   return user;
 };
@@ -33,19 +53,6 @@ const getAdminEmail = async (email) => {
     email: email?.toLowerCase().trim(),
     role: "admin",
   });
-  return user;
-};
-
-const updateUserById = async (userId, updateBody) => {
-  const user = await getUserById(userId);
-  if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-  }
-  if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
-  }
-  Object.assign(user, updateBody);
-  await user.save();
   return user;
 };
 

@@ -24,6 +24,10 @@ const userSchema = mongoose.Schema(
       type: String,
       trim: true,
     },
+    metaMaskAddress: {
+      type: String,
+      trim: true,
+    },
     date: {
       type: String,
     },
