@@ -72,7 +72,7 @@ export const createTable = async (req, res, io) => {
       gameType: "poker",
       autoNextHand: autohand,
       invPlayers: invitetedPlayerUserId,
-      public: isPublic,
+      public: true, //isPublic,
       smallBlind: minchips,
       bigBlind,
       timer,
