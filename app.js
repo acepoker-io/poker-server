@@ -22,7 +22,7 @@ import mongoose from "mongoose";
 import User from "./landing-server/models/user.model.js";
 import returnCron from "./cron/cron.js";
 //import tournamentModel from "./models/tournament";
-import authRoutes from './routes/authRoutes.js'
+import authRoutes from "./routes/authRoutes.js";
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
@@ -37,6 +37,8 @@ const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://beta.wptpoker.io",
+  "https://admin.wptpoker.io",
+  "https://api.wptpoker.io",
 ];
 const corsOptions = {
   origin: function (origin, callback) {
