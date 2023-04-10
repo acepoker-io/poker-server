@@ -44,9 +44,7 @@ const generateToken = (
  * @returns {Promise<Token>}
  */
 const saveToken = async (token, userId, expires, type, blacklisted = false) => {
-  console.log("userId---", userId);
   const prevToken = await Token.deleteMany({ user: userId });
-  console.log("prevToken---", prevToken);
 
   const tokenDoc = await Token.create({
     token,

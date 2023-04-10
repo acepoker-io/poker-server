@@ -30,6 +30,7 @@ const blockUser = async (id) => {
   const blockAction = !users.isBlock ? "blocked" : "active";
   return { status: 200, msg: blockAction, user };
 };
+
 const getAllUsers = async (query) => {
   let search;
   const skip = Number(query.skip);
@@ -77,6 +78,7 @@ const getAllUsers = async (query) => {
   const count = await User.countDocuments(search);
   return { users, count };
 };
+
 const updateUser = async (userId, updateBody) => {
   const {
     firstName,

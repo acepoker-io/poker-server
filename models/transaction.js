@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 
 //creating mongo database schema
 const transactionSchema = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: "users" },
+  userId: { type: Schema.Types.ObjectId, ref: "User" },
   roomId: { type: Schema.Types.ObjectId, ref: "room", default: null },
   amount: { type: Number },
   prevWallet: { type: Number },

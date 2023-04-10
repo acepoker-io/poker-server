@@ -1,5 +1,6 @@
 import mongoose, { mongo } from "mongoose";
 import User from "../landing-server/models/user.model.js";
+import s3Service from "./s3.service.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -31,10 +32,10 @@ const getUserByPhone = async (phone) => {
 const updateUserById = async (userId, updateBody) => {
   const user = await getUserById(userId);
   if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
   }
   if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+    throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
   }
   Object.assign(user, updateBody);
   await user.save();
@@ -42,7 +43,9 @@ const updateUserById = async (userId, updateBody) => {
 };
 
 const createUser = async (userBody) => {
-  const checkExist = await User.findOne({ metaMaskAddress: userBody?.metaMaskAddress });
+  const checkExist = await User.findOne({
+    metaMaskAddress: userBody?.metaMaskAddress,
+  });
   if (checkExist) return checkExist;
   const user = await User.create(userBody);
   return user;
@@ -56,12 +59,30 @@ const getAdminEmail = async (email) => {
   return user;
 };
 
+const uploadUserProfile = async (file, user) => {
+  console.log("file ====>", file);
+  const res = await s3Service.uploadS3(file);
+  console.log("res ===>", res);
+  const upd = await User.updateOne(
+    {
+      _id: user._id,
+    },
+    { profile: res.Location }
+  );
+  if (upd.nModified === 1) {
+    const users = await User.findOne({ _id: user._id });
+    return users;
+  }
+  return false;
+};
+
 const userService = {
   getUserById,
   updateUserWallet,
   getAdminEmail,
   createUser,
   updateUserById,
+  uploadUserProfile,
 };
 
 export default userService;

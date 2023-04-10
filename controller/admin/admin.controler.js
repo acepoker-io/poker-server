@@ -9,6 +9,7 @@ import httpStatus from "http-status";
 // import adminService from "../../service/admin/admin.service.js";
 import authService from "../../service/auth.service.js";
 import tokenService from "../../service/token.service.js";
+import multiparty from "multiparty";
 // import ApiError from "../../landing-server/utils/ApiError.js";
 import catchAsync from "../../landing-server/utils/catchAsync.js";
 import User from "../../landing-server/models/user.model.js";
@@ -69,15 +70,15 @@ export const checkAdmin = catchAsync(async (req, res, next) => {
   throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized user");
 });
 
-// export const blockUser = catchAsync(async (req, res, next) => {
-//   const block = await adminService.blockUser(req.params.id);
-//   return res.status(200).send({ block });
-// });
+export const blockUser = catchAsync(async (req, res, next) => {
+  const block = await adminService.blockUser(req.params.id);
+  return res.status(200).send({ block });
+});
 
-// export const updateUser = catchAsync(async (req, res, next) => {
-//   const user = await adminService.updateUser(req.params.id, req.body);
-//   return res.status(200).send({ user });
-// });
+export const updateUser = catchAsync(async (req, res, next) => {
+  const user = await adminService.updateUser(req.params.id, req.body);
+  return res.status(200).send({ user });
+});
 
 export const dashboardCount = catchAsync(async (req, res, next) => {
   const allCount = await adminService.allDashboardCount();
@@ -309,6 +310,62 @@ export const createTable = async (req, res, io) => {
   }
 };
 
+export const deleteTable = async (req, res) => {
+  // console.log("faizaan is here", req.query.tableId);
+  const { tableId } = req.query;
+  console.log("Delete table id", tableId);
+  try {
+    // const response = await pokerTournamentService.deleteTable(
+    //   req.query.tableId
+    // );
+    const table = await roomModel.findOne({
+      _id: tableId,
+      isGameRunning: false,
+    });
+    // const roomIdArr = table?.rooms;
+    if (!table) {
+      // throw new ApiError(httpStatus.NOT_FOUND, 'table not found');
+      return {
+        success: false,
+        msg: "Game is already running",
+        code: 200,
+      };
+    }
+    await roomModel.deleteOne({
+      _id: tableId,
+    });
+    console.log("response", {
+      success: true,
+      msg: "Table deleted succcessfully",
+      code: 200,
+    });
+    return res.status(200).send({
+      success: true,
+      msg: "Table deleted succcessfully",
+      code: 200,
+    });
+  } catch (err) {
+    console.log("err--", err);
+    return res.status(401).send({ message: "Something went wrong!" });
+  }
+};
+
+export const uploadProfile = catchAsync(async (req, res, next) => {
+  const form = new multiparty.Form();
+  form.parse(req, async (error, fields, files) => {
+    if (error) throw new ApiError(httpStatus.NOT_FOUND, "Wrong file format");
+    if (files.file.length === 0) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Please upload profile image.");
+    }
+    const user = await userService.uploadUserProfile(files.file[0], req.user);
+    if (user) {
+      return res.status(200).send({ userDetail: user });
+    }
+    logger.info(JSON.stringify(err));
+    throw new ApiError(httpStatus.NOT_FOUND, "Something went wrong!");
+  });
+});
+
 // export const CreateTournament = catchAsync(async (req, res,next) => {
 //   console.log('Created Tournament');
 //   const response = await adminService.CreateTournament(req.body);
@@ -323,6 +380,10 @@ const adminController = {
   getAllTransaction,
   resetPassword,
   createTable,
+  deleteTable,
+  uploadProfile,
+  updateUser,
+  blockUser,
   // checkAdmin,
   // dashboardCount,
   getAllUsersForInvite,
