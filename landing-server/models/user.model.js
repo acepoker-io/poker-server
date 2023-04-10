@@ -78,7 +78,7 @@ const userSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
-    tournaments: { type: Array, default: [] },
+    // tournaments: { type: Array, default: [] },
     termsAccept: {
       type: Boolean,
       default: false,
@@ -87,6 +87,14 @@ const userSchema = mongoose.Schema(
     blockTime: {
       type: Date,
       default: new Date(),
+    },
+    isBlock: {
+      type: Boolean,
+      default: false,
+    },
+    loginAttempt: {
+      type: Number,
+      default: 0,
     },
   },
 

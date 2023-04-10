@@ -12,6 +12,10 @@ import {
   getPokerTable,
   createTable,
   updateWallet,
+  deleteTable,
+  uploadProfile,
+  updateUser,
+  blockUser,
 } from "../controller/admin/admin.controler.js";
 import authValidation from "../validation/auth.validation.js";
 import validate from "../middlewares/validate.js";
@@ -41,6 +45,14 @@ const adimRoute = (io) => {
   router.put("/update-wallet/:id", auth(), updateWallet);
 
   router.post("/createTable", auth(), (req, res) => createTable(req, res, io));
+
+  router.delete("/tableDelete", auth(), deleteTable);
+
+  router.post("/uploadProfile", auth(), uploadProfile);
+
+  router.post("/update-user/:id", auth(), updateUser);
+
+  router.put("/block-user/:id", auth(), blockUser);
 
   return router;
 };
