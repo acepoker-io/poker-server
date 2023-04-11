@@ -299,7 +299,7 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
   }
 });
 
-app.use("/poker", auth(), pokerRoute(io));
+app.use("/poker", pokerRoute(io)); //, auth()
 // app.use("/tournament", auth(), tournamentRoute);
 // app.use("/v1/admin/auth", adminRoute);
 app.use("/auth", authRoutes);
