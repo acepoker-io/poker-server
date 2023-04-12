@@ -18,6 +18,7 @@ const pokerRoute = (io) => {
     createTable(req, res, io)
   );
   router.get("/rooms", getAllGame);
+
   router.get("/getAllUsers", auth(), getAllUsers);
   router.get("/checkUserInTable/:tableId", auth(), checkIfUserInTable);
   router.get("/getTablePlayers/:tableId", auth(), getTablePlayers);
