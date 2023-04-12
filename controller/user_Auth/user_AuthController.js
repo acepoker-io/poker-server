@@ -26,23 +26,26 @@ const createUser = catchAsync(async (req, res, next) => {
 const loginWithMetamask = async (req, res) => {
   try {
     const { metaMaskAddress } = req.body;
-    const userData = await User.findOne({ metaMaskAddress });
+    let userData = await User.findOne({ metaMaskAddress });
     if (!userData) {
       // return res.send({status:401, message:"Please provide detail"});
 
-      const user = await User.create({
+      userData = await User.create({
         username: metaMaskAddress?.trim()?.toString()?.slice(0, 10),
         metaMaskAddress: metaMaskAddress,
       });
-      res.send({
-        user: user,
-        token: tokens.access.token,
-        status: 200,
-      });
+      // res.send({
+      //   user: userData,
+      //   token: tokens.access.token,
+      //   status: 200,
+      // });
     }
+    console.log("userData: ==>", userData);
     const tokens = await tokenService.generateAuthTokens(userData);
+    console.log("tokens: ==>", tokens);
     res.send({ user: userData, token: tokens.access.token, status: 200 });
   } catch (err) {
+    console.log("err ===>", err);
     throw new ApiError(500, "Internal server error");
   }
 };
