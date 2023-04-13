@@ -27,6 +27,7 @@ const loginWithMetamask = async (req, res) => {
   try {
     const { metaMaskAddress } = req.body;
     let userData = await User.findOne({ metaMaskAddress });
+    console.log("userData", userData);
     if (!userData) {
       // return res.send({status:401, message:"Please provide detail"});
 
@@ -42,7 +43,7 @@ const loginWithMetamask = async (req, res) => {
     }
     // console.log("userData: ==>", userData);
     const tokens = await tokenService.generateAuthTokens(userData);
-    // console.log("tokens: ==>", tokens);
+    console.log("tokens: ==>", tokens);
     res.send({ user: userData, token: tokens.access.token, status: 200 });
   } catch (err) {
     console.log("err ===>", err);
