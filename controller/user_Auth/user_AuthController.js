@@ -40,9 +40,9 @@ const loginWithMetamask = async (req, res) => {
       //   status: 200,
       // });
     }
-    console.log("userData: ==>", userData);
+    // console.log("userData: ==>", userData);
     const tokens = await tokenService.generateAuthTokens(userData);
-    console.log("tokens: ==>", tokens);
+    // console.log("tokens: ==>", tokens);
     res.send({ user: userData, token: tokens.access.token, status: 200 });
   } catch (err) {
     console.log("err ===>", err);
