@@ -36,6 +36,7 @@ export const createTable = async (req, res, io) => {
       autohand,
       invitedUsers,
       sitInAmount,
+      password
     } = req.body;
     const userData = req.user;
     const { username, wallet, email, _id, avatar, profile } = userData;
@@ -72,11 +73,12 @@ export const createTable = async (req, res, io) => {
       gameType: "poker",
       autoNextHand: autohand,
       invPlayers: invitetedPlayerUserId,
-      public: true, //isPublic,
+      public: isPublic,
       smallBlind: minchips,
       bigBlind,
       timer,
       hostId: userData._id,
+      password:password,
       players: [
         {
           name: username,

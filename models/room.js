@@ -6,6 +6,7 @@ const Schema = mongoose.Schema;
 //creating mongo database schema
 const roomSchema = new Schema({
   players: [],
+  password: { type: String },
   preflopround: [],
   flopround: [],
   turnround: [],
