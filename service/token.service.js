@@ -82,6 +82,7 @@ const verifyToken = async (token, type) => {
  * @returns {Promise<Object>}
  */
 const generateAuthTokens = async (user) => {
+  console.log("user ==>", user);
   const accessTokenExpires = moment().add(
     process.env.JWT_ACCESS_EXPIRATION_MINUTES,
     "minutes"

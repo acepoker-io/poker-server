@@ -7,54 +7,54 @@ import { roles } from "../config/roles.js";
 
 const userSchema = mongoose.Schema(
   {
-    firstName: {
-      type: String,
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      trim: true,
-    },
+    // firstName: {
+    //   type: String,
+    //   trim: true,
+    // },
+    // lastName: {
+    //   type: String,
+    //   trim: true,
+    // },
     username: {
       type: String,
       trim: true,
       required: true,
     },
-    phone: {
-      type: String,
-      trim: true,
-    },
+    // phone: {
+    //   type: String,
+    //   trim: true,
+    // },
     metaMaskAddress: {
       type: String,
       trim: true,
     },
-    date: {
-      type: String,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-      validate(value) {
-        if (!validator.isEmail(value)) {
-          throw new Error("Invalid email");
-        }
-      },
-    },
+    // date: {
+    //   type: String,
+    // },
+    // email: {
+    //   type: String,
+    //   required: true,
+    //   unique: true,
+    //   trim: true,
+    //   lowercase: true,
+    //   // validate(value) {
+    //   //   if (!validator.isEmail(value)) {
+    //   //     throw new Error("Invalid email");
+    //   //   }
+    //   // },
+    // },
     password: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
-      minlength: 8,
-      validate(value) {
-        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
-          throw new Error(
-            "Password must contain at least one letter and one number"
-          );
-        }
-      },
+      // minlength: 8,
+      // validate(value) {
+      //   if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
+      //     throw new Error(
+      //       "Password must contain at least one letter and one number"
+      //     );
+      //   }
+      // },
       private: true, // used by the toJSON plugin
     },
     role: {
@@ -62,14 +62,14 @@ const userSchema = mongoose.Schema(
       enum: roles,
       default: "user",
     },
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
-    },
-    isPhoneVerified: {
-      type: Boolean,
-      default: false,
-    },
+    // isEmailVerified: {
+    //   type: Boolean,
+    //   default: false,
+    // },
+    // isPhoneVerified: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     wallet: {
       type: Number,
       default: 0,
@@ -79,11 +79,11 @@ const userSchema = mongoose.Schema(
       default: 0,
     },
     // tournaments: { type: Array, default: [] },
-    termsAccept: {
-      type: Boolean,
-      default: false,
-    },
-    profile: { type: String },
+    // termsAccept: {
+    //   type: Boolean,
+    //   default: false,
+    // },
+    // profile: { type: String },
     blockTime: {
       type: Date,
       default: new Date(),
