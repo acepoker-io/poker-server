@@ -4,6 +4,7 @@ import Message from "../models/messageModal.js";
 import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
+import userService from "../service/user.service.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -61,10 +62,6 @@ export const createTable = async (req, res, io) => {
     if (sitInAmount > wallet) {
       return res.status(403).send({ message: "You don't have enough balance" });
     }
-
-    // if (checkInGame) {
-    //   return res.status(403).send({ message: "You are already in a game." });
-    // }
 
     const bigBlind = minchips * 2;
     const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
@@ -192,7 +189,6 @@ export const getTablePlayers = async (req, res) => {
     if (!roomData) {
       return res.status(403).send({ message: "Room not found" });
     }
-
     res.status(200).send({ players: roomData.players });
   } catch (error) {
     console.log("getTablePlayers", error);
@@ -340,4 +336,39 @@ export const refillWallet = async (data, io, socket) => {
       console.log("error in  refillWallet", error);
     }
   });
+};
+export const checkVerifyPrivateTable = async (req, res) => {
+  try {
+    const {tableId,password}=req.body
+    const checkTable = await roomModel.findOne({
+      _id: mongoose.Types.ObjectId(tableId),
+    });
+    if (!checkTable) {
+      return res.status(401).send({ message:"Table not found" });
+    }
+    const verifyPswd = await checkTable.isPasswordMatch(password);
+    if(verifyPswd){
+      return res.status(200).send({ verify:true});
+    }  
+  } catch (error) {
+    console.log("error in checkIfUserInTable", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
+export const checkUserInGame = async (req, res) => {
+  const inGame = await userService.checkUserAvailableInGame(req.user._id);
+  if (inGame?.pokerGame) {
+    let API_URL;
+    if (req.headers.origin === 'http://localhost:3000') {
+      API_URL = `http://localhost:${process.env.PORT}`;
+    }
+    if (req.headers.origin === 'https://beta.wptpoker.io') {
+      API_URL = 'https://api.wptpoker.io';
+    }
+    return res.status(200).json({
+      inGame: true,
+      reJoinUrl: `${req.headers.origin}/table?gamecollection=poker&tableid=${inGame?.pokerGame?._id}`,
+      leaveTable: `${API_URL}/leaveGame/${inGame?.pokerGame?._id}/${req.user._id}`,
+    });
+  }
 };

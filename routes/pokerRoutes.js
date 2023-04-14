@@ -7,6 +7,8 @@ import {
   checkIfUserInTable,
   getTablePlayers,
   refillWallet,
+  checkVerifyPrivateTable,
+  checkUserInGame,
 } from "../controller/pokerController.js";
 import { validateCreateTable } from "../validation/poker.validation.js";
 import auth from "../landing-server/middlewares/auth";
@@ -23,7 +25,8 @@ const pokerRoute = (io) => {
   router.get("/checkUserInTable/:tableId", auth(), checkIfUserInTable);
   router.get("/getTablePlayers/:tableId", auth(), getTablePlayers);
   router.post("/refillWallet", auth(), refillWallet);
-
+  router.post("/verifyPrivateTable", auth(), checkVerifyPrivateTable);
+  router.get("/checkUserInGame", auth(), checkUserInGame);
   router.get("/check-auth", auth(), async (req, res) => {
     try {
       res.status(200).send({ user: req.user });
