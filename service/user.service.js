@@ -1,6 +1,7 @@
 import mongoose, { mongo } from "mongoose";
 import User from "../landing-server/models/user.model.js";
 import s3Service from "./s3.service.js";
+import roomModel from "../models/room.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -75,7 +76,17 @@ const uploadUserProfile = async (file, user) => {
   }
   return false;
 };
-
+const checkUserAvailableInGame=async(userId)=>{
+  const promiseData = (await Promise.allSettled([
+    roomModel.findOne({"players.userid": userId}),
+  ]))
+  const [
+    pokerGame,
+  ] = promiseData.map((el) => el.value);
+  return {
+    pokerGame: pokerGame,
+  };
+}
 const userService = {
   getUserById,
   updateUserWallet,
@@ -83,6 +94,7 @@ const userService = {
   createUser,
   updateUserById,
   uploadUserProfile,
+  checkUserAvailableInGame
 };
 
 export default userService;

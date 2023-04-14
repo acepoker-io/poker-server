@@ -1,11 +1,12 @@
 //imports
 import mongoose from "mongoose";
-
+import bcrypt from "bcryptjs";
 const Schema = mongoose.Schema;
 
 //creating mongo database schema
 const roomSchema = new Schema({
   players: [],
+  password: { type: String },
   preflopround: [],
   flopround: [],
   turnround: [],
@@ -77,7 +78,27 @@ const roomSchema = new Schema({
   isGameRunning: { type: Boolean, default: false },
   eliminationCount: { type: Number },
 });
+/**
+ * Check if password matches the user's password
+ * @param {string} password
+ * @returns {Promise<boolean>}
+ */
+roomSchema.methods.isPasswordMatch = async function (password) {
+  const user = this;
+  return bcrypt.compare(password, user.password);
+};
 
+roomSchema.pre("save", async function (next) {
+  const user = this;
+  if (user.isModified("password")) {
+    user.password = await bcrypt.hash(user.password, 8);
+  }
+  next();
+});
+
+/**
+ * @typedef roomModel
+ */
 const roomModel = mongoose.model("rooms", roomSchema);
 
 export default roomModel;
