@@ -347,9 +347,11 @@ export const checkVerifyPrivateTable = async (req, res) => {
       return res.status(401).send({ message:"Table not found" });
     }
     const verifyPswd = await checkTable.isPasswordMatch(password);
-    if(verifyPswd){
+    if(!verifyPswd){
+      return res.status(401).send({ message:"Password not match!" });
+    }
       return res.status(200).send({ verify:true});
-    }  
+
   } catch (error) {
     console.log("error in checkIfUserInTable", error);
     res.status(500).send({ message: "Internal server error" });
