@@ -348,7 +348,7 @@ export const checkVerifyPrivateTable = async (req, res) => {
     }
     const verifyPswd = await checkTable.isPasswordMatch(password);
     if(!verifyPswd){
-      return res.status(401).send({ message:"Password not match!" });
+      return res.status(404).send({ message:"Password not match!" });
     }
       return res.status(200).send({ verify:true});
 
