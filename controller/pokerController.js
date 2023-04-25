@@ -37,8 +37,9 @@ export const createTable = async (req, res, io) => {
       autohand,
       invitedUsers,
       sitInAmount,
-      password
+      password,
     } = req.body;
+    console.log("req body ==>", req.body);
     const userData = req.user;
     const { username, wallet, email, _id, avatar, profile } = userData;
     const timer = 15;
@@ -75,7 +76,7 @@ export const createTable = async (req, res, io) => {
       bigBlind,
       timer,
       hostId: userData._id,
-      password:password,
+      password: password,
       players: [
         {
           name: username,
@@ -136,7 +137,7 @@ export const createTable = async (req, res, io) => {
 export const getAllGame = async (req, res) => {
   try {
     const getAllRunningRoom = await roomModel
-      .find({ public: true })
+      .find({})
       .populate("players.userid");
     return res.status(200).send({ rooms: getAllRunningRoom || [] });
   } catch (error) {
@@ -339,19 +340,18 @@ export const refillWallet = async (data, io, socket) => {
 };
 export const checkVerifyPrivateTable = async (req, res) => {
   try {
-    const {tableId,password}=req.body
+    const { tableId, password } = req.body;
     const checkTable = await roomModel.findOne({
       _id: mongoose.Types.ObjectId(tableId),
     });
     if (!checkTable) {
-      return res.status(401).send({ message:"Table not found" });
+      return res.status(401).send({ message: "Table not found" });
     }
     const verifyPswd = await checkTable.isPasswordMatch(password);
-    if(!verifyPswd){
-      return res.status(404).send({ message:"Password not match!" });
+    if (!verifyPswd) {
+      return res.status(404).send({ message: "Password not match!" });
     }
-      return res.status(200).send({ verify:true});
-
+    return res.status(200).send({ verify: true });
   } catch (error) {
     console.log("error in checkIfUserInTable", error);
     res.status(500).send({ message: "Internal server error" });
@@ -361,11 +361,11 @@ export const checkUserInGame = async (req, res) => {
   const inGame = await userService.checkUserAvailableInGame(req.user._id);
   if (inGame?.pokerGame) {
     let API_URL;
-    if (req.headers.origin === 'http://localhost:3000') {
+    if (req.headers.origin === "http://localhost:3000") {
       API_URL = `http://localhost:${process.env.PORT}`;
     }
-    if (req.headers.origin === 'https://beta.wptpoker.io') {
-      API_URL = 'https://api.wptpoker.io';
+    if (req.headers.origin === "https://beta.wptpoker.io") {
+      API_URL = "https://api.wptpoker.io";
     }
     return res.status(200).json({
       inGame: true,
