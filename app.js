@@ -306,6 +306,5 @@ app.use("/auth", authRoutes);
 app.use("/v1/admin/auth", adminRoute(io));
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
-
 //server
 server.listen(PORT, () => console.log(`server running on port ${PORT}`));

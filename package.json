@@ -7,6 +7,7 @@
     "dev": "nodemon --exec npx babel-node app.js"
   },
   "dependencies": {
+    "@thirdweb-dev/sdk": "^3.10.11",
     "aws-sdk": "^2.1350.0",
     "axios": "^0.20.0",
     "babel-preset-es2015": "^6.0.0",
@@ -18,6 +19,7 @@
     "crypto-js": "^4.1.1",
     "debug": "~2.6.9",
     "dotenv": "^10.0.0",
+    "ethers": "5",
     "express": "^4.16.4",
     "fetch": "1.1.0",
     "http-errors": "~1.6.3",
