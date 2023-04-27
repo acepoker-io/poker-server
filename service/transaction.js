@@ -26,11 +26,9 @@ export const convertUsdToEth = async (amount) => {
   }
 };
 
-export const getBalance = async () => {
+export const getBalance = async (address) => {
   try {
-    const b = await sdk.getBalance(
-      "0xc3c637615164f840DD8De0ef782A206794e064f5"
-    );
+    const b = await sdk.getBalance(address);
     console.log("bb", b);
     return b;
   } catch (error) {
@@ -38,26 +36,26 @@ export const getBalance = async () => {
   }
 };
 
-export const getTransactionReceiptByHash = async (txhash) => {
+export const getTransactionReceiptByHash = async (hash) => {
   try {
-    const receipt = await sdk.getProvider().getTransactionReceipt(txhash);
+    const receipt = await sdk.getProvider().getTransactionReceipt(hash);
     console.log("receipt", receipt);
-    getTransactionByHash();
     return receipt;
   } catch (error) {
     console.log("error in getTransactionReceiptByHash", error);
   }
 };
 
-export const getTransactionByHash = async (txhash) => {
+export const getTransactionByHash = async (hash) => {
   try {
-    const transaction = await sdk.getProvider().getTransaction(txhash);
+    const transaction = await sdk.getProvider().getTransaction(hash);
     console.log("transaction", transaction);
     const data = JSON.parse(ethers.utils.toUtf8String(transaction.data));
-    const amount = sdk.getProvider().console.log("transaction data", data);
+    console.log("transaction data", data);
+    transaction.value;
     return transaction;
   } catch (error) {
-    console.log("error in getTransactionByHash", error);
+    console.log("error in getTransactionReceiptByHash", error);
   }
 };
 
