@@ -18,6 +18,7 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
+import { getTransactionByHash } from "../service/transaction";
 
 const gameRestartSeconds = 8000;
 const playerLimit = 9;
@@ -6856,7 +6857,7 @@ export const finishHandApiCall = async (room, userId) => {
 export const checkForGameTable = async (data, socket, io) => {
   console.log("Check table socket trigger");
   try {
-    const { gameId, userId, sitInAmount } = data;
+    const { gameId, userId, sitInAmount, hash } = data;
     let game = await gameService.getGameById(gameId);
 
     if (!game) {
@@ -6916,6 +6917,10 @@ export const checkForGameTable = async (data, socket, io) => {
     }
 
     console.log("USER WALLET ", user.wallet);
+    const transaction = await getTransactionByHash(hash);
+    if(transaction.amount !== sitInAmount){
+      return socket.emit("socketError", { msg: "Mismatch transaction"});
+    }
 
     const updatedRoom = await gameService.joinRoomByUserId(
       game,

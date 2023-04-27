@@ -24,9 +24,9 @@ return null;
 
 }
 
-export const getBalance = async() => {
+export const getBalance = async(address) => {
     try {
-        const b = await sdk.getBalance("0xc3c637615164f840DD8De0ef782A206794e064f5");
+        const b = await sdk.getBalance(address);
         console.log("bb", b);
 return b
     } catch (error) {
@@ -34,24 +34,23 @@ return b
     }
 }
 
-export const getTransactionReceiptByHash = async () => {
+export const getTransactionReceiptByHash = async (hash) => {
     try {
-        const receipt = await sdk.getProvider().getTransactionReceipt("0x6b4068582dfd8d7d6466930cd1796cb5615df155e7e42ababc68f4381d7cb5f2");
+        const receipt = await sdk.getProvider().getTransactionReceipt(hash);
         console.log("receipt", receipt);
-        getTransactionByHash();
         return receipt;
     } catch (error) {
         console.log("error in getTransactionReceiptByHash", error)
     }
 }
 
-export const getTransactionByHash = async() => {
+export const getTransactionByHash = async(hash) => {
     try {
-    const transaction = await sdk.getProvider().getTransaction("0x6b4068582dfd8d7d6466930cd1796cb5615df155e7e42ababc68f4381d7cb5f2")
+    const transaction = await sdk.getProvider().getTransaction(hash)
     console.log("transaction", transaction);
     const data = JSON.parse(ethers.utils.toUtf8String(transaction.data))
-    const amount = sdk.getProvider().
     console.log("transaction data", data)
+    transaction.value
         return transaction;
 
     } catch (error) {
