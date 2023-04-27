@@ -18,7 +18,8 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
-import { getTransactionByHash } from "../service/transaction";
+import { convertEthToUsd, getTransactionByHash } from "../service/transaction";
+import { ethers } from "ethers";
 
 const gameRestartSeconds = 8000;
 const playerLimit = 9;
@@ -6918,9 +6919,14 @@ export const checkForGameTable = async (data, socket, io) => {
 
     console.log("USER WALLET ", user.wallet);
     const transaction = await getTransactionByHash(hash);
-    if (transaction.amount !== sitInAmount) {
+    console.log("transaction reponse ==>", transaction);
+    const transactionEth = ethers.utils.formatEther(transaction?.value);
+    const amntInDollar = await convertEthToUsd(transactionEth);
+    console.log("transaction amount ==>", amntInDollar, transactionEth);
+    if (amntInDollar !== sitInAmount) {
       return socket.emit("socketError", { msg: "Mismatch transaction" });
     }
+    // return;
 
     const updatedRoom = await gameService.joinRoomByUserId(
       game,

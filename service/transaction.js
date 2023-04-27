@@ -26,6 +26,26 @@ export const convertUsdToEth = async (amount) => {
   }
 };
 
+export const convertEthToUsd = async (eth) => {
+  // var requestOptions = { method: "GET", redirect: "follow" };
+  const resp = await axios.get(
+    "https://api.coinbase.com/v2/exchange-rates?currency=Eth"
+  );
+  console.log("USD RATE", resp?.data?.data?.rates?.USD);
+  const usdRate = resp?.data?.data?.rates?.USD;
+  console.log(
+    "amount ==>",
+    parseFloat(usdRate) * eth,
+    parseFloat(usdRate),
+    eth
+  );
+  return Math.round(parseFloat(usdRate) * parseFloat(eth));
+
+  // .then((response) => response.json())
+  // .then((result) => { return (result.data.rates.USD) })
+  // .catch((error) => { return ("error", error) });
+};
+
 export const getBalance = async (address) => {
   try {
     const b = await sdk.getBalance(address);

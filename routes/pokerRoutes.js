@@ -38,6 +38,7 @@ const pokerRoute = (io) => {
   });
   router.get("/getTableById", auth(), async (req, res) => {
     try {
+      console.log("query ==>", req.query);
       const { tableId } = req.query;
       const table = await roomModel.findOne({ _id: tableId });
       res.send(table);
