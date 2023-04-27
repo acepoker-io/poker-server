@@ -18,6 +18,7 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
+import { getTransactionByHash } from "../service/transaction";
 
 const gameRestartSeconds = 8000;
 const playerLimit = 9;
@@ -6856,7 +6857,8 @@ export const finishHandApiCall = async (room, userId) => {
 export const checkForGameTable = async (data, socket, io) => {
   console.log("Check table socket trigger");
   try {
-    const { gameId, userId, sitInAmount } = data;
+    const { gameId, userId, sitInAmount, txhash } = data;
+
     let game = await gameService.getGameById(gameId);
 
     if (!game) {
@@ -6915,7 +6917,10 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    console.log("USER WALLET ", user.wallet);
+    // console.log("USER WALLET ", user.wallet);
+    const checkTransactionSucessFull = await getTransactionByHash(txhash);
+    console.log("checkTransactionSucessFull ==>", checkTransactionSucessFull);
+    return 0;
 
     const updatedRoom = await gameService.joinRoomByUserId(
       game,
@@ -7361,5 +7366,16 @@ export const blindTimer = async (data, io) => {
     return;
   } catch (error) {
     console.log("error in blindTimer", error);
+  }
+};
+
+export const getTableById = async (tableId, io, socket) => {
+  try {
+    console.log("table id ==>", tableId);
+    const table = await roomModel.findOne({ _id: tableId });
+    console.log("table===>", table);
+    io.in(tableId).emit("getRoomDataById", table);
+  } catch (err) {
+    console.log("error in get table by id ===>", err);
   }
 };

@@ -12,6 +12,7 @@ import {
 } from "../controller/pokerController.js";
 import { validateCreateTable } from "../validation/poker.validation.js";
 import auth from "../landing-server/middlewares/auth";
+import roomModel from "../models/room.js";
 
 const router = express.Router();
 const pokerRoute = (io) => {
@@ -35,6 +36,16 @@ const pokerRoute = (io) => {
       res.status(500).send({ message: "Internal server error" });
     }
   });
+  router.get("/getTableById", auth(), async (req, res) => {
+    try {
+      const { tableId } = req.query;
+      const table = await roomModel.findOne({ _id: tableId });
+      res.send(table);
+    } catch (error) {
+      console.log("error in getTableById ==>", error);
+    }
+  });
+
   return router;
 };
 
