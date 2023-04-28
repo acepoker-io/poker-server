@@ -103,13 +103,13 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
   if (game.players.length < playerLimit) {
     //game.public &&
     const availblePosition = await findAvailablePosition(game.players);
-    console.log("availblePosition ==>", availblePosition);
+    // console.log("availblePosition ==>", availblePosition);
     if (!availblePosition.isFound) {
       return null;
     }
-    console.log("entered in first");
+    // console.log("entered in first");
     const Type = game.players.length === 0 ? 1 : 2;
-    console.log("Type ==>", Type);
+    // console.log("Type ==>", Type);
     const room = pushUserInRoom(
       game,
       userId,
@@ -117,7 +117,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
       sitInAmount,
       Type
     );
-    console.log("Type ==>", Type);
+    // console.log("Type ==>", Type);
     return room;
     // else check invite array for private tables
     // join user in game if there is empty slot else return slot full
@@ -125,7 +125,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
     game.invPlayers.find((uId) => uId.toString() === userId.toString()) &&
     game.players.length < playerLimit
   ) {
-    console.log("entered in second");
+    // console.log("entered in second");
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
@@ -140,10 +140,10 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
     );
     return room;
   } else if (game.public && game.players.length >= playerLimit) {
-    console.log("entered in thrid");
+    // console.log("entered in thrid");
     return null;
   } else {
-    console.log("entered in forth");
+    // console.log("entered in forth");
     return null;
   }
 };

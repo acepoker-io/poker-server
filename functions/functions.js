@@ -18,10 +18,15 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
-import { convertEthToUsd, getTransactionByHash } from "../service/transaction";
+import {
+  convertEthToUsd,
+  getTransactionByHash,
+  sendCommisionToSharableAddress,
+} from "../service/transaction";
 import { ethers } from "ethers";
 
 const gameRestartSeconds = 8000;
+const commisionPersentage = 0.0005;
 const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
@@ -1900,6 +1905,9 @@ export const showdown = async (roomid, io) => {
       totalPot += e.pot;
       showDownPlayers.push(p);
     });
+
+    // console.log("playerData ===>", playerData);
+
     const updateRoom = await roomModel.findOneAndUpdate(
       {
         _id: roomid,
@@ -1912,6 +1920,8 @@ export const showdown = async (roomid, io) => {
       },
       { new: true }
     );
+
+    // console.log("updateRoom ===>", updateRoom);
 
     if (updateRoom.sidePots.length || updateRoom.allinPlayers.length) {
       await getSidePOt(updateRoom._id);
@@ -1963,6 +1973,7 @@ export const showdown = async (roomid, io) => {
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
     let i = 0;
+
     const findWinner = async () => {
       hands.forEach((e) => {
         let winners = Hand.winners(e.h);
@@ -1972,6 +1983,7 @@ export const showdown = async (roomid, io) => {
               let winnerData = showdownData.filter(
                 (p) => p.position === el.position
               );
+              e.pot -= e.pot * commisionPersentage;
               winnerData[0].wallet +=
                 winners.length > 1
                   ? parseInt(e.pot / winners.length, 10)
@@ -2040,7 +2052,11 @@ export const showdown = async (roomid, io) => {
         });
       });
     };
+
     await findWinner();
+    console.log("Winner players ===>", winnerPlayers);
+    console.log("total commision =====>", totalCommision);
+
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
@@ -2095,16 +2111,35 @@ export const showdown = async (roomid, io) => {
       }
     });
 
-    upRoomData.winnerPlayer = winnerPlayers;
-    upRoomData.handWinner = handWinner;
-    upRoomData.isShowdown = true;
-    upRoomData.sidePots = sidePots;
-    console.log("showdwon", upRoomData.showdown);
+    let totalCommision = 0;
+
+    if (upRoomData?.pot) {
+      totalCommision += upRoomData?.pot * commisionPersentage;
+      upRoomData.pot -= totalCommision;
+    } else {
+      upRoomData.sidePots = upRoomData?.sidePots?.map((el) => {
+        let crrCommission = el?.pot * commisionPersentage;
+        el.pot -= crrCommission;
+        totalCommision += crrCommission;
+        return el;
+      });
+    }
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
       gameRestartSeconds,
     });
+
+    io.in(upRoomData._id.toString()).emit("executingCommission");
+
+    const transaction = await sendCommisionToSharableAddress(totalCommision);
+    console.log("transaction ==>", transaction);
+
+    upRoomData.winnerPlayer = winnerPlayers;
+    upRoomData.handWinner = handWinner;
+    upRoomData.isShowdown = true;
+    upRoomData.sidePots = sidePots;
+    console.log("showdwon", upRoomData.showdown);
 
     const upRoom = await roomModel.findOneAndUpdate(
       {
@@ -2120,6 +2155,8 @@ export const showdown = async (roomid, io) => {
         new: true,
       }
     );
+
+    console.log("upp roomm --->", upRoom);
 
     setTimeout(async () => {
       if (upRoom.tournament) {
@@ -5041,7 +5078,8 @@ export const socketDoAllin = async (dta, io, socket) => {
 
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
-    // console.log("winner before show down executed");
+    console.log("winner before show down executed");
+
     const roomData = await roomModel.findOne({ _id: roomid });
     // console.log("ROOM DATA PLAYERS ", roomData.players);
     let winnerAmount = 0;
@@ -6478,13 +6516,13 @@ const createTransactionFromUsersArray = async (
     console.log("users ===>", users);
     let transactionObjectsArray = [];
     const rankModelUpdate = [];
-    let usersWalltAmt = [];
-    let userTickets = [];
+    let MetamaskAddress = [];
+    // let userTickets = [];
 
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
-      usersWalltAmt.push(crrUser.wallet);
-      userTickets.push(crrUser.ticket);
+      MetamaskAddress.push(crrUser?.metaMaskAddress);
+      // userTickets.push(crrUser.ticket);
     }
 
     console.log("users wallet amount ================>", usersWalltAmt);
@@ -6513,8 +6551,8 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          const prvAmt = updatedAmount + usersWalltAmt[i];
-          updatedAmount -= elem.amount;
+          // const prvAmt = updatedAmount + usersWalltAmt[i];
+          // updatedAmount -= elem.amount;
           // Get each transaction last and update wallet amount
           console.log(
             "update amount: ------------------------------------------------>",
@@ -6530,14 +6568,7 @@ const createTransactionFromUsersArray = async (
           userTickets[i] = crrTicket;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
           console.log("updated amount ----->", updatedAmount);
-          const ddd = {
-            prevWallet: 1000,
-            updatedWallet: 900,
-          };
-          const d = {
-            prevTicket: prevTickets,
-            updatedTicket: crrTicket,
-          };
+
           return {
             userId,
             roomId,
@@ -6545,12 +6576,12 @@ const createTransactionFromUsersArray = async (
               gameWinOrLoseamount >= 0
                 ? gameWinOrLoseamount * 2
                 : gameWinOrLoseamount,
-            transactionDetails: {},
-            prevWallet: prvAmt,
-            updatedWallet: updatedAmount + usersWalltAmt[i],
-            transactionType: "poker",
-            prevTicket: prevTickets,
-            updatedTicket: crrTicket,
+            // transactionDetails: {},
+            // prevWallet: prvAmt,
+            // updatedWallet: updatedAmount + usersWalltAmt[i],
+            // transactionType: "poker",
+            // prevTicket: prevTickets,
+            // updatedTicket: crrTicket,
           };
         });
       }
@@ -6919,7 +6950,7 @@ export const checkForGameTable = async (data, socket, io) => {
 
     console.log("USER WALLET ", user.wallet);
     const transaction = await getTransactionByHash(hash);
-    console.log("transaction reponse ==>", transaction);
+    // console.log("transaction response ==>", transaction);
     const transactionEth = ethers.utils.formatEther(transaction?.value);
     const amntInDollar = await convertEthToUsd(transactionEth);
     console.log("transaction amount ==>", amntInDollar, transactionEth);
