@@ -100,7 +100,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
-  if (game.public && game.players.length < playerLimit) {
+  if (game.players.length < playerLimit) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
