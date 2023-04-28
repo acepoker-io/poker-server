@@ -81,17 +81,21 @@ export const getTransactionByHash = async (hash) => {
 
 export const sendTransactionToWinner = async (amount, winnerAddress) => {
   try {
+    console.log("sendTransactionToWinner ===>", amount, winnerAddress);
     const value = await convertUsdToEth(amount);
     const tx = {
       to: winnerAddress,
       from: process.env.OWNER_ADDRESS,
-      gasPrice: await sdk.getProvider().getGasPrice(),
+      gasPrice: ethers.utils.parseUnits("2", "gwei"),
       gasLimit: 10000000,
-      value: ethers.utils.parseEther(value.toString()),
-      nonce: await sdk.getProvider().getTransactionCount(),
+      value: ethers.utils.parseEther(value.toFixed(9).toString()),
+      // nonce: await sdk.getProvider().getTransactionCount(),
     };
-    const transferToWinner = await sdk.getProvider().sendTransaction(tx);
-    console.log(transferToWinner);
+    console.log("tx ==>", tx);
+    const transferToWinner = await sdk.wallet.sendRawTransaction(tx);
+    // const transferToWinner = await sdk.getProvider().sendTransaction(tx);
+
+    console.log("transferToWinner ===>", transferToWinner);
     return transferToWinner;
   } catch (error) {
     console.log("error in sendTransactionToWinner", error);
@@ -103,8 +107,8 @@ export const sendCommisionToSharableAddress = async (amount) => {
     console.log("amount ==>", amount);
     const value = await convertUsdToEth(amount);
     const tx = {
-      to: "0xc3c637615164f840DD8De0ef782A206794e064f5", //process.env.COMMISSION_ADDRESS,
-      from: "0x2e09059610b00A04Ab89412Bd7d7ac73DfAa1Dcc", //process.env.OWNER_ADDRESS,
+      to: process.env.COMMISSION_ADDRESS, //"0xc3c637615164f840DD8De0ef782A206794e064f5",
+      from: process.env.OWNER_ADDRESS, //"0x2e09059610b00A04Ab89412Bd7d7ac73DfAa1Dcc",
       gasPrice: ethers.utils.parseUnits("2", "gwei"),
       gasLimit: 10000000,
       value: ethers.utils.parseEther(value.toFixed(9).toString()),
@@ -114,7 +118,6 @@ export const sendCommisionToSharableAddress = async (amount) => {
     // const transferToCommisionAddress = await sdk.getProvider();
     console.log("get provider ==>", t);
     // .sendTransaction(tx);
-    console.log("toCommision ====>", t);
     return t;
   } catch (error) {
     console.log("error in sendCommisionToSharableAddress ==>", error);

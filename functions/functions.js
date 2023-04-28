@@ -22,6 +22,7 @@ import {
   convertEthToUsd,
   getTransactionByHash,
   sendCommisionToSharableAddress,
+  sendTransactionToWinner,
 } from "../service/transaction";
 import { ethers } from "ethers";
 
@@ -6517,6 +6518,7 @@ const createTransactionFromUsersArray = async (
     let transactionObjectsArray = [];
     const rankModelUpdate = [];
     let MetamaskAddress = [];
+    let userTransactions = [];
     // let userTickets = [];
 
     for await (const user of users) {
@@ -6525,7 +6527,7 @@ const createTransactionFromUsersArray = async (
       // userTickets.push(crrUser.ticket);
     }
 
-    console.log("users wallet amount ================>", usersWalltAmt);
+    // console.log("users wallet amount ================>", usersWalltAmt);
 
     users.forEach(async (el, i) => {
       console.log("7013", JSON.stringify(el));
@@ -6538,6 +6540,7 @@ const createTransactionFromUsersArray = async (
       let totalWin = 0;
       let totalLose = 0;
       let prevAmount = 0;
+
       let handsTransaction = [];
       if (!tournament) {
         handsTransaction = el.hands.map((elem) => {
@@ -6561,11 +6564,11 @@ const createTransactionFromUsersArray = async (
 
           const gameWinOrLoseamount =
             elem.action === "game-lose" ? -elem.amount : elem.amount;
-          const lastAmount = updatedAmount + usersWalltAmt[i];
-          const prevTickets = userTickets[i];
-          const crrTicket =
-            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
-          userTickets[i] = crrTicket;
+          // const lastAmount = updatedAmount + usersWalltAmt[i];
+          // const prevTickets = userTickets[i];
+          // const crrTicket =
+          //   userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
+          // userTickets[i] = crrTicket;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
           console.log("updated amount ----->", updatedAmount);
 
@@ -6583,6 +6586,10 @@ const createTransactionFromUsersArray = async (
             // prevTicket: prevTickets,
             // updatedTicket: crrTicket,
           };
+        });
+        userTransactions.push({
+          address: el?.metaMaskAddress,
+          amount: el?.wallet,
         });
       }
 
@@ -6615,7 +6622,7 @@ const createTransactionFromUsersArray = async (
       users[i].newBalance = updatedAmount;
     });
 
-    return [transactionObjectsArray, rankModelUpdate];
+    return [transactionObjectsArray, rankModelUpdate, userTransactions];
   } catch (error) {
     console.log("rreeeemmm", error);
   }
@@ -6684,7 +6691,7 @@ export const leaveApiCall = async (room, userId) => {
 
     // console.log({ allUsers })
     let users = [];
-    allUsers.forEach((item) => {
+    for await (let item of allUsers) {
       // console.log({ item })
       let hands = item.hands ? [...item.hands] : [];
       let uid = item.id ? item.id : item.userid;
@@ -6705,10 +6712,15 @@ export const leaveApiCall = async (room, userId) => {
         });
       }
 
+      const crrUser = await userModel.findOne({
+        _id: uid,
+      });
+
       users.push({
         uid,
         hands: hands,
         coinsBeforeJoin: item.initialCoinBeforeStart,
+        metaMaskAddress: crrUser?.metaMaskAddress,
         gameLeaveAt: new Date(),
         wallet: item.wallet,
         gameJoinedAt: item.gameJoinedAt,
@@ -6716,7 +6728,7 @@ export const leaveApiCall = async (room, userId) => {
           ? true
           : false,
       });
-    });
+    }
 
     // console.log("USERS => 7301");
 
@@ -6735,36 +6747,43 @@ export const leaveApiCall = async (room, userId) => {
 
     // console.log("users1====>", users);
 
-    const [transactions, rankModelUpdate] =
+    const [transactions, rankModelUpdate, userTransactions] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
 
     // console.log("users2====>", users);
-    const userBalancePromise = users.map((el) => {
-      let totalTicketWon = 0;
-      // console.log("user hand ===>", el.hands);
-      el.hands.forEach((hand) => {
-        if (hand.action === "game-win") {
-          totalTicketWon += hand.amount;
-        }
-      });
-      // console.log("total tickets token", totalTicketWon);
-      const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
-      // console.log("newBalnce =====>", newBalnce, el.newBalance);
 
-      return userModel.updateOne(
-        {
-          _id: convertMongoId(el.uid),
-        },
-        {
-          $inc: {
-            wallet: newBalnce,
-            ticket: totalTicketWon * 2,
-          },
-        }
-      );
-    });
+    console.log("userTransactions ======>", userTransactions);
+
+    // const userBalancePromise = users.map((el) => {
+    //   let totalTicketWon = 0;
+    //   // console.log("user hand ===>", el.hands);
+    //   el.hands.forEach((hand) => {
+    //     if (hand.action === "game-win") {
+    //       totalTicketWon += hand.amount;
+    //     }
+    //   });
+    //   // console.log("total tickets token", totalTicketWon);
+    //   const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
+    //   // console.log("newBalnce =====>", newBalnce, el.newBalance);
+
+    //   return userModel.updateOne(
+    //     {
+    //       _id: convertMongoId(el.uid),
+    //     },
+    //     {
+    //       $inc: {
+    //         wallet: newBalnce,
+    //         ticket: totalTicketWon * 2,
+    //       },
+    //     }
+    //   );
+    // });
 
     // console.log("transactions ====>", transactions);
+
+    const userTransactionProm = userTransactions.map((el) => {
+      return sendTransactionToWinner(el?.amount, el?.address);
+    });
 
     const filterdHndWinnerData = room?.handWinner?.map((el) => {
       let filtrd = el.filter((obj) => obj.id.toString() !== userId.toString());
@@ -6787,7 +6806,8 @@ export const leaveApiCall = async (room, userId) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
-        ...userBalancePromise,
+        ...userTransactionProm,
+        // ...userBalancePromise,
         ...rankModelUpdate,
       ]);
       console.log(
@@ -6799,7 +6819,8 @@ export const leaveApiCall = async (room, userId) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
-        ...userBalancePromise,
+        ...userTransactionProm,
+        // ...userBalancePromise,
         ...rankModelUpdate,
       ]);
       console.log(
