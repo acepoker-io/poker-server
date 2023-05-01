@@ -5137,7 +5137,13 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       };
       showDownPlayers.push(p);
     });
-    winnerAmount += roomData.pot;
+
+    console.log("roomData.pot", roomData.pot, roomData.sidePots, winnerAmount);
+    let commision = parseFloat(winnerAmount) * commisionPersentage;
+    console.log("commission", commision);
+    roomData.pot = roomData.pot - commision;
+
+    winnerAmount -= commision;
 
     let winnerPlayerData = showDownPlayers.filter(
       (el) => el.id.toString() === playerid.toString()
@@ -5147,6 +5153,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let totalPlayerTablePot = winnerPlayerData[0].prevPot;
 
     const winningAmount = winnerAmount - totalPlayerTablePot;
+
+    if (!roomData.pot && (!roomData.sidePots || !roomData.sidePots?.length)) {
+    }
+    console.log("winning amount ==>", winningAmount);
     const winnerPlayer = [
       {
         id: winnerPlayerData[0].id,
@@ -5203,6 +5213,11 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         new: true,
       }
     );
+
+    io.in(updatedRoom._id.toString()).emit("executingCommission");
+
+    const transaction = await sendCommisionToSharableAddress(commision);
+    console.log("transaction ==>", transaction);
 
     console.log("showwwwww---->", updatedRoom.showdown);
 
@@ -6792,9 +6807,10 @@ export const leaveApiCall = async (room, userId, io, socket) => {
       return filtrd;
     });
 
-    io.in(room.id || room._id).emit("userTransaction", { userId });
+    console.log("io ==>", io);
+    console.log("userId ======>", userId, room.id, room._id);
+    io.in(room._id.toString()).emit("userTransaction", { userId });
 
-    console.log("userId ======>", userId);
     if (userId) {
       const response = await Promise.allSettled([
         // Remove user from the room
