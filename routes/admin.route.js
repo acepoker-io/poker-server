@@ -16,6 +16,8 @@ import {
   uploadProfile,
   updateUser,
   blockUser,
+  createUser,
+  deleteUser,
 } from "../controller/admin/admin.controler.js";
 import authValidation from "../validation/auth.validation.js";
 import validate from "../middlewares/validate.js";
@@ -51,8 +53,10 @@ const adimRoute = (io) => {
   router.post("/uploadProfile", auth(), uploadProfile);
 
   router.post("/update-user/:id", auth(), updateUser);
+  router.post("/create-user", auth(),createUser);
 
   router.put("/block-user/:id", auth(), blockUser);
+  router.delete("/delete-user/:id", auth(), deleteUser);
 
   return router;
 };

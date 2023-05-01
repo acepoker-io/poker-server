@@ -30,6 +30,17 @@ const blockUser = async (id) => {
   const blockAction = !users.isBlock ? "blocked" : "active";
   return { status: 200, msg: blockAction, user };
 };
+const deleteUser = async (id) => {
+  const users = await User.findOne({ _id: id });
+  if (!users) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User not exist");
+  }
+  const deleteUser=await User.deleteOne({_id: id })
+  if (deleteUser) {
+    return true;
+  }
+  return false;
+};
 
 const getAllUsers = async (query) => {
   let search;
@@ -81,14 +92,14 @@ const getAllUsers = async (query) => {
 
 const updateUser = async (userId, updateBody) => {
   const {
-    firstName,
-    lastName,
-    email,
+    // firstName,
+    // lastName,
+    // email,
     username,
-    phone,
-    existEmail,
+    // phone,
+    // existEmail,
     existUsername,
-    existPhone,
+    // existPhone,
   } = updateBody;
   if (username.toLowerCase()?.trim() !== existUsername.toLowerCase()?.trim()) {
     const existName = await User.findOne({
@@ -98,36 +109,56 @@ const updateUser = async (userId, updateBody) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
     }
   }
-  if (email.toLowerCase()?.trim() !== existEmail.toLowerCase()?.trim()) {
-    const existUserEmail = await User.findOne({
-      email: email.toLowerCase()?.trim(),
-    });
-    if (existUserEmail) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Email already exist");
-    }
-  }
-  if (phone !== existPhone) {
-    const existUserPhone = await User.findOne({
-      phone: phone,
-    });
-    if (existUserPhone) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Phone Number is already in use"
-      );
-    }
-  }
+  // if (email.toLowerCase()?.trim() !== existEmail.toLowerCase()?.trim()) {
+  //   const existUserEmail = await User.findOne({
+  //     email: email.toLowerCase()?.trim(),
+  //   });
+  //   if (existUserEmail) {
+  //     throw new ApiError(httpStatus.BAD_REQUEST, "Email already exist");
+  //   }
+  // }
+  // if (phone !== existPhone) {
+  //   const existUserPhone = await User.findOne({
+  //     phone: phone,
+  //   });
+  //   if (existUserPhone) {
+  //     throw new ApiError(
+  //       httpStatus.BAD_REQUEST,
+  //       "Phone Number is already in use"
+  //     );
+  //   }
+  // }
   const userUpdate = await User.updateOne(
     { _id: userId },
     {
-      firstName,
-      lastName,
-      phone,
-      email: email.toLowerCase()?.trim(),
+      // firstName,
+      // lastName,
+      // phone,
+      // email: email.toLowerCase()?.trim(),
       username: username?.toLowerCase()?.trim(),
     }
   );
   if (userUpdate) {
+    return true;
+  }
+  return false;
+};
+const createUser = async ( userBody) => {
+  const {
+    username,
+  } = userBody;
+    const existName = await User.findOne({
+      username: username?.toLowerCase()?.trim(),
+    });
+    if (existName) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
+    }
+  const createUser = await User.create(
+    {
+      username: username?.toLowerCase()?.trim(),
+    }
+  );
+  if (createUser) {
     return true;
   }
   return false;
@@ -335,10 +366,12 @@ const updateUserWallet = async (id, body) => {
 const adminService = {
   getAllUsers,
   blockUser,
+  deleteUser,
   updateUser,
   allDashboardCount,
   monthlyGameStats,
   allTransaction,
   updateUserWallet,
+  createUser
 };
 export default adminService;
