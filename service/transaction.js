@@ -86,7 +86,7 @@ export const sendTransactionToWinner = async (amount, winnerAddress) => {
     const tx = {
       to: winnerAddress,
       from: process.env.OWNER_ADDRESS,
-      gasPrice: ethers.utils.parseUnits("2", "gwei"),
+      gasPrice: ethers.utils.parseUnits("1", "gwei"),
       gasLimit: 10000000,
       value: ethers.utils.parseEther(value.toFixed(9).toString()),
       // nonce: await sdk.getProvider().getTransactionCount(),
@@ -109,7 +109,7 @@ export const sendCommisionToSharableAddress = async (amount) => {
     const tx = {
       to: process.env.COMMISSION_ADDRESS, //"0xc3c637615164f840DD8De0ef782A206794e064f5",
       from: process.env.OWNER_ADDRESS, //"0x2e09059610b00A04Ab89412Bd7d7ac73DfAa1Dcc",
-      gasPrice: ethers.utils.parseUnits("2", "gwei"),
+      gasPrice: ethers.utils.parseUnits("1", "gwei"),
       gasLimit: 10000000,
       value: ethers.utils.parseEther(value.toFixed(9).toString()),
     };
