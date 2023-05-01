@@ -50,19 +50,19 @@ export const createTable = async (req, res, io) => {
       return res.status(403).send({ message: "You are already in a game." });
     }
 
-    if (!sitInAmount) {
-      return res.status(403).send({ message: "Sit in amount is required" });
-    }
+    // if (!sitInAmount) {
+    //   return res.status(403).send({ message: "Sit in amount is required" });
+    // }
 
-    if (sitInAmount < 100) {
-      return res
-        .status(403)
-        .send({ message: "Minimum 100 coins need for sit in amount" });
-    }
+    // if (sitInAmount < 100) {
+    //   return res
+    //     .status(403)
+    //     .send({ message: "Minimum 100 coins need for sit in amount" });
+    // }
 
-    if (sitInAmount > wallet) {
-      return res.status(403).send({ message: "You don't have enough balance" });
-    }
+    // if (sitInAmount > wallet) {
+    //   return res.status(403).send({ message: "You don't have enough balance" });
+    // }
 
     const bigBlind = minchips * 2;
     const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
@@ -77,23 +77,23 @@ export const createTable = async (req, res, io) => {
       timer,
       hostId: userData._id,
       password: password,
-      players: [
-        {
-          name: username,
-          userid: _id,
-          id: _id,
-          photoURI: avatar ? avatar : profile ? profile : img,
-          wallet: sitInAmount,
-          position: 0,
-          missedSmallBlind: false,
-          missedBigBlind: false,
-          forceBigBlind: false,
-          playing: true,
-          initialCoinBeforeStart: sitInAmount,
-          gameJoinedAt: new Date(),
-          hands: [],
-        },
-      ],
+      // players: [
+      //   {
+      //     name: username,
+      //     userid: _id,
+      //     id: _id,
+      //     photoURI: avatar ? avatar : profile ? profile : img,
+      //     wallet: sitInAmount,
+      //     position: 0,
+      //     missedSmallBlind: false,
+      //     missedBigBlind: false,
+      //     forceBigBlind: false,
+      //     playing: true,
+      //     initialCoinBeforeStart: sitInAmount,
+      //     gameJoinedAt: new Date(),
+      //     hands: [],
+      //   },
+      // ],
     });
     const getAllRunningRoom = await roomModel
       .find({ public: true })

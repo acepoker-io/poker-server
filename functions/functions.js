@@ -18,8 +18,16 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
+import {
+  convertEthToUsd,
+  getTransactionByHash,
+  sendCommisionToSharableAddress,
+  sendTransactionToWinner,
+} from "../service/transaction";
+import { ethers } from "ethers";
 
 const gameRestartSeconds = 8000;
+const commisionPersentage = 0.00025;
 const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
@@ -1898,6 +1906,9 @@ export const showdown = async (roomid, io) => {
       totalPot += e.pot;
       showDownPlayers.push(p);
     });
+
+    // console.log("playerData ===>", playerData);
+
     const updateRoom = await roomModel.findOneAndUpdate(
       {
         _id: roomid,
@@ -1910,6 +1921,8 @@ export const showdown = async (roomid, io) => {
       },
       { new: true }
     );
+
+    // console.log("updateRoom ===>", updateRoom);
 
     if (updateRoom.sidePots.length || updateRoom.allinPlayers.length) {
       await getSidePOt(updateRoom._id);
@@ -1961,6 +1974,7 @@ export const showdown = async (roomid, io) => {
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
     let i = 0;
+
     const findWinner = async () => {
       hands.forEach((e) => {
         let winners = Hand.winners(e.h);
@@ -1970,6 +1984,7 @@ export const showdown = async (roomid, io) => {
               let winnerData = showdownData.filter(
                 (p) => p.position === el.position
               );
+              e.pot -= e.pot * commisionPersentage;
               winnerData[0].wallet +=
                 winners.length > 1
                   ? parseInt(e.pot / winners.length, 10)
@@ -2038,7 +2053,11 @@ export const showdown = async (roomid, io) => {
         });
       });
     };
+
     await findWinner();
+    console.log("Winner players ===>", winnerPlayers);
+    console.log("total commision =====>", totalCommision);
+
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
@@ -2093,6 +2112,20 @@ export const showdown = async (roomid, io) => {
       }
     });
 
+    let totalCommision = 0;
+
+    if (upRoomData?.pot) {
+      totalCommision += upRoomData?.pot * commisionPersentage;
+      upRoomData.pot -= totalCommision;
+    } else {
+      upRoomData.sidePots = upRoomData?.sidePots?.map((el) => {
+        let crrCommission = el?.pot * commisionPersentage;
+        el.pot -= crrCommission;
+        totalCommision += crrCommission;
+        return el;
+      });
+    }
+
     upRoomData.winnerPlayer = winnerPlayers;
     upRoomData.handWinner = handWinner;
     upRoomData.isShowdown = true;
@@ -2103,6 +2136,11 @@ export const showdown = async (roomid, io) => {
       updatedRoom: upRoomData,
       gameRestartSeconds,
     });
+
+    io.in(upRoomData._id.toString()).emit("executingCommission");
+
+    const transaction = await sendCommisionToSharableAddress(totalCommision);
+    console.log("transaction ==>", transaction);
 
     const upRoom = await roomModel.findOneAndUpdate(
       {
@@ -2118,6 +2156,8 @@ export const showdown = async (roomid, io) => {
         new: true,
       }
     );
+
+    console.log("upp roomm --->", upRoom);
 
     setTimeout(async () => {
       if (upRoom.tournament) {
@@ -2147,7 +2187,7 @@ export const showdown = async (roomid, io) => {
                 roomdata: updatedRoomPlayers,
               });
               if (updatedRoomPlayers?.finish) {
-                await finishedTableGame(updatedRoomPlayers);
+                await finishedTableGame(updatedRoomPlayers, "", io);
 
                 io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
                   msg: "Room finished",
@@ -2157,7 +2197,7 @@ export const showdown = async (roomid, io) => {
               }
               if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
                 console.log("Line 2275 Game finished ");
-                await finishedTableGame(updatedRoomPlayers);
+                await finishedTableGame(updatedRoomPlayers, "", io);
                 io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
                   msg: "Game finished",
                   finish: updatedRoomPlayers.finish,
@@ -2179,7 +2219,7 @@ export const showdown = async (roomid, io) => {
         }
         const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
         if (roomUpdate?.finish) {
-          await finishedTableGame(roomUpdate);
+          await finishedTableGame(roomUpdate, "", io);
           io.in(roomUpdate._id.toString()).emit("roomFinished", {
             msg: "Game finished",
             finish: roomUpdate?.finish,
@@ -2863,7 +2903,7 @@ export const doFinishGame = async (data, io, socket) => {
         }
 
         if (updatedData.runninground === 0) {
-          await finishedTableGame(updatedData, userid);
+          await finishedTableGame(updatedData, userid, io, socket);
         }
         io.in(updatedData._id.toString()).emit("roomFinished", {
           msg: msg,
@@ -2872,7 +2912,7 @@ export const doFinishGame = async (data, io, socket) => {
         });
       } else {
         console.log("userId =====;...>", userid);
-        await finishedTableGame(roomData, userid);
+        await finishedTableGame(roomData, userid, io, socket);
         console.log("action error executed");
         if (socket)
           socket.emit("actionError", { code: 400, msg: "Bad request" });
@@ -3342,7 +3382,7 @@ export const doLeaveTable = async (data, io, socket) => {
           data.isWatcher
         ) {
           console.log("entered in first if");
-          await leaveApiCall(roomdata, userid);
+          await leaveApiCall(roomdata, userid, io, socket);
         } else {
           console.log("entered in else condition do leave");
           await doFinishGame(
@@ -5039,7 +5079,8 @@ export const socketDoAllin = async (dta, io, socket) => {
 
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
-    // console.log("winner before show down executed");
+    console.log("winner before show down executed");
+
     const roomData = await roomModel.findOne({ _id: roomid });
     // console.log("ROOM DATA PLAYERS ", roomData.players);
     let winnerAmount = 0;
@@ -5218,7 +5259,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
                 roomdata: updatedRoomPlayers,
               });
               if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
-                await finishedTableGame(updatedRoomPlayers, playerid);
+                await finishedTableGame(updatedRoomPlayers, playerid, io);
                 io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
                   msg: "Game finished",
                   finish: updatedRoomPlayers.finish,
@@ -5240,7 +5281,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         }
         const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id });
         if (roomUpdate?.finish) {
-          await finishedTableGame(roomUpdate, playerid);
+          await finishedTableGame(roomUpdate, playerid, io);
           io.in(roomUpdate._id.toString()).emit("roomFinished", {
             msg: "Room Finished",
             finish: roomUpdate?.finish,
@@ -6278,10 +6319,10 @@ export const findLoserAndWinner = async (room) => {
   }
 };
 
-export const finishedTableGame = async (room, userid) => {
+export const finishedTableGame = async (room, userid, io) => {
   try {
     console.log("LEAVE API CALL 6885");
-    const dd = await leaveApiCall(room, userid);
+    const dd = await leaveApiCall(room, userid, io);
     // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
     console.log("Error in finished game function =>", err.message);
@@ -6441,7 +6482,7 @@ export const doLeaveWatcher = async (data, io, socket) => {
     const { tableId, userId, gameType } = data;
     const room = await roomModel.findOne({ tableId });
     console.log("LEAVE API CALL 7046");
-    const isCalled = await leaveApiCall(room, userId);
+    const isCalled = await leaveApiCall(room, userId, io, socket);
     if (isCalled) {
       const updatedRoom = await roomModel.findOneAndUpdate(
         { tableId, "watchers.userid": userId },
@@ -6476,16 +6517,17 @@ const createTransactionFromUsersArray = async (
     console.log("users ===>", users);
     let transactionObjectsArray = [];
     const rankModelUpdate = [];
-    let usersWalltAmt = [];
-    let userTickets = [];
+    let MetamaskAddress = [];
+    let userTransactions = [];
+    // let userTickets = [];
 
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
-      usersWalltAmt.push(crrUser.wallet);
-      userTickets.push(crrUser.ticket);
+      MetamaskAddress.push(crrUser?.metaMaskAddress);
+      // userTickets.push(crrUser.ticket);
     }
 
-    console.log("users wallet amount ================>", usersWalltAmt);
+    // console.log("users wallet amount ================>", usersWalltAmt);
 
     users.forEach(async (el, i) => {
       console.log("7013", JSON.stringify(el));
@@ -6498,6 +6540,7 @@ const createTransactionFromUsersArray = async (
       let totalWin = 0;
       let totalLose = 0;
       let prevAmount = 0;
+
       let handsTransaction = [];
       if (!tournament) {
         handsTransaction = el.hands.map((elem) => {
@@ -6511,8 +6554,8 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          const prvAmt = updatedAmount + usersWalltAmt[i];
-          updatedAmount -= elem.amount;
+          // const prvAmt = updatedAmount + usersWalltAmt[i];
+          // updatedAmount -= elem.amount;
           // Get each transaction last and update wallet amount
           console.log(
             "update amount: ------------------------------------------------>",
@@ -6521,21 +6564,14 @@ const createTransactionFromUsersArray = async (
 
           const gameWinOrLoseamount =
             elem.action === "game-lose" ? -elem.amount : elem.amount;
-          const lastAmount = updatedAmount + usersWalltAmt[i];
-          const prevTickets = userTickets[i];
-          const crrTicket =
-            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
-          userTickets[i] = crrTicket;
+          // const lastAmount = updatedAmount + usersWalltAmt[i];
+          // const prevTickets = userTickets[i];
+          // const crrTicket =
+          //   userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
+          // userTickets[i] = crrTicket;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
           console.log("updated amount ----->", updatedAmount);
-          const ddd = {
-            prevWallet: 1000,
-            updatedWallet: 900,
-          };
-          const d = {
-            prevTicket: prevTickets,
-            updatedTicket: crrTicket,
-          };
+
           return {
             userId,
             roomId,
@@ -6543,13 +6579,17 @@ const createTransactionFromUsersArray = async (
               gameWinOrLoseamount >= 0
                 ? gameWinOrLoseamount * 2
                 : gameWinOrLoseamount,
-            transactionDetails: {},
-            prevWallet: prvAmt,
-            updatedWallet: updatedAmount + usersWalltAmt[i],
-            transactionType: "poker",
-            prevTicket: prevTickets,
-            updatedTicket: crrTicket,
+            // transactionDetails: {},
+            // prevWallet: prvAmt,
+            // updatedWallet: updatedAmount + usersWalltAmt[i],
+            // transactionType: "poker",
+            // prevTicket: prevTickets,
+            // updatedTicket: crrTicket,
           };
+        });
+        userTransactions.push({
+          address: el?.metaMaskAddress,
+          amount: el?.wallet,
         });
       }
 
@@ -6582,13 +6622,13 @@ const createTransactionFromUsersArray = async (
       users[i].newBalance = updatedAmount;
     });
 
-    return [transactionObjectsArray, rankModelUpdate];
+    return [transactionObjectsArray, rankModelUpdate, userTransactions];
   } catch (error) {
     console.log("rreeeemmm", error);
   }
 };
 
-export const leaveApiCall = async (room, userId) => {
+export const leaveApiCall = async (room, userId, io, socket) => {
   try {
     let player;
     console.log("leave api call", room.players.length);
@@ -6651,7 +6691,7 @@ export const leaveApiCall = async (room, userId) => {
 
     // console.log({ allUsers })
     let users = [];
-    allUsers.forEach((item) => {
+    for await (let item of allUsers) {
       // console.log({ item })
       let hands = item.hands ? [...item.hands] : [];
       let uid = item.id ? item.id : item.userid;
@@ -6672,10 +6712,15 @@ export const leaveApiCall = async (room, userId) => {
         });
       }
 
+      const crrUser = await userModel.findOne({
+        _id: uid,
+      });
+
       users.push({
         uid,
         hands: hands,
         coinsBeforeJoin: item.initialCoinBeforeStart,
+        metaMaskAddress: crrUser?.metaMaskAddress,
         gameLeaveAt: new Date(),
         wallet: item.wallet,
         gameJoinedAt: item.gameJoinedAt,
@@ -6683,7 +6728,7 @@ export const leaveApiCall = async (room, userId) => {
           ? true
           : false,
       });
-    });
+    }
 
     // console.log("USERS => 7301");
 
@@ -6702,41 +6747,52 @@ export const leaveApiCall = async (room, userId) => {
 
     // console.log("users1====>", users);
 
-    const [transactions, rankModelUpdate] =
+    const [transactions, rankModelUpdate, userTransactions] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
 
     // console.log("users2====>", users);
-    const userBalancePromise = users.map((el) => {
-      let totalTicketWon = 0;
-      // console.log("user hand ===>", el.hands);
-      el.hands.forEach((hand) => {
-        if (hand.action === "game-win") {
-          totalTicketWon += hand.amount;
-        }
-      });
-      // console.log("total tickets token", totalTicketWon);
-      const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
-      // console.log("newBalnce =====>", newBalnce, el.newBalance);
 
-      return userModel.updateOne(
-        {
-          _id: convertMongoId(el.uid),
-        },
-        {
-          $inc: {
-            wallet: newBalnce,
-            ticket: totalTicketWon * 2,
-          },
-        }
-      );
-    });
+    console.log("userTransactions ======>", userTransactions);
+
+    // const userBalancePromise = users.map((el) => {
+    //   let totalTicketWon = 0;
+    //   // console.log("user hand ===>", el.hands);
+    //   el.hands.forEach((hand) => {
+    //     if (hand.action === "game-win") {
+    //       totalTicketWon += hand.amount;
+    //     }
+    //   });
+    //   // console.log("total tickets token", totalTicketWon);
+    //   const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
+    //   // console.log("newBalnce =====>", newBalnce, el.newBalance);
+
+    //   return userModel.updateOne(
+    //     {
+    //       _id: convertMongoId(el.uid),
+    //     },
+    //     {
+    //       $inc: {
+    //         wallet: newBalnce,
+    //         ticket: totalTicketWon * 2,
+    //       },
+    //     }
+    //   );
+    // });
 
     // console.log("transactions ====>", transactions);
+
+    const userTransactionProm = userTransactions
+      .filter((el) => el.amount > 0)
+      .map((el) => {
+        return sendTransactionToWinner(el?.amount, el?.address);
+      });
 
     const filterdHndWinnerData = room?.handWinner?.map((el) => {
       let filtrd = el.filter((obj) => obj.id.toString() !== userId.toString());
       return filtrd;
     });
+
+    io.in(room.id || room._id).emit("userTransaction", { userId });
 
     console.log("userId ======>", userId);
     if (userId) {
@@ -6754,7 +6810,8 @@ export const leaveApiCall = async (room, userId) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
-        ...userBalancePromise,
+        ...userTransactionProm,
+        // ...userBalancePromise,
         ...rankModelUpdate,
       ]);
       console.log(
@@ -6766,7 +6823,8 @@ export const leaveApiCall = async (room, userId) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
-        ...userBalancePromise,
+        ...userTransactionProm,
+        // ...userBalancePromise,
         ...rankModelUpdate,
       ]);
       console.log(
@@ -6856,7 +6914,7 @@ export const finishHandApiCall = async (room, userId) => {
 export const checkForGameTable = async (data, socket, io) => {
   console.log("Check table socket trigger");
   try {
-    const { gameId, userId, sitInAmount } = data;
+    const { gameId, userId, sitInAmount, hash } = data;
     let game = await gameService.getGameById(gameId);
 
     if (!game) {
@@ -6916,6 +6974,16 @@ export const checkForGameTable = async (data, socket, io) => {
     }
 
     console.log("USER WALLET ", user.wallet);
+    socket.emit("validatingTransaction", {});
+    const transaction = await getTransactionByHash(hash);
+    // console.log("transaction response ==>", transaction);
+    const transactionEth = ethers.utils.formatEther(transaction?.value);
+    const amntInDollar = await convertEthToUsd(transactionEth);
+    console.log("transaction amount ==>", amntInDollar, transactionEth);
+    if (amntInDollar !== sitInAmount) {
+      return socket.emit("socketError", { msg: "Mismatch transaction" });
+    }
+    // return;
 
     const updatedRoom = await gameService.joinRoomByUserId(
       game,
@@ -7361,5 +7429,16 @@ export const blindTimer = async (data, io) => {
     return;
   } catch (error) {
     console.log("error in blindTimer", error);
+  }
+};
+
+export const getTableById = async (tableId, io, socket) => {
+  try {
+    console.log("table id ==>", tableId);
+    const table = await roomModel.findOne({ _id: tableId });
+    console.log("table===>", table);
+    io.in(tableId).emit("getRoomDataById", table);
+  } catch (err) {
+    console.log("error in get table by id ===>", err);
   }
 };

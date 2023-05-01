@@ -29,6 +29,7 @@ import {
   emitTyping,
   JoinTournament,
   checkAlreadyInGame,
+  getTableById,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
@@ -37,7 +38,6 @@ import { connetToLanding, landingSocket } from "./landing_Connection";
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 let returnSocket = (io) => {
-  
   const users = {};
 
   const socketToRoom = {};
@@ -45,7 +45,7 @@ let returnSocket = (io) => {
   io.room = [];
   io.on("connection", async (socket) => {
     connetToLanding(socket);
-    console.log("sockket connecteds")
+    console.log("sockket connecteds");
     socket.on("room", (roomData) => {
       socket.join(roomData.roomid);
       socket.emit("welcome", { msg: "hello welcome to socket.io" });
@@ -154,7 +154,6 @@ let returnSocket = (io) => {
     });
 
     socket.on("doresumegame", async (data) => {
-
       process.nextTick(async () => {
         await doResumeGame(data, io, socket);
       });
@@ -340,6 +339,11 @@ let returnSocket = (io) => {
 
     socket.on("joinTournament", async (data) => {
       await JoinTournament(data, io, socket);
+    });
+
+    socket.on("getRoomDataById", async (data) => {
+      const { tableId } = data;
+      await getTableById(tableId, socket, io);
     });
   });
 };
