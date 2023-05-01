@@ -23,6 +23,7 @@ import User from "./landing-server/models/user.model.js";
 import returnCron from "./cron/cron.js";
 //import tournamentModel from "./models/tournament";
 import authRoutes from "./routes/authRoutes.js";
+import { sendCommisionToSharableAddress } from "./service/transaction";
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
@@ -306,6 +307,10 @@ app.use("/auth", authRoutes);
 app.use("/v1/admin/auth", adminRoute(io));
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
-
 //server
 server.listen(PORT, () => console.log(`server running on port ${PORT}`));
+
+// const testFun = async () => {
+//   await sendCommisionToSharableAddress(4);
+// };
+// testFun();
