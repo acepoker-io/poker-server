@@ -6532,13 +6532,14 @@ const createTransactionFromUsersArray = async (
     console.log("users ===>", users);
     let transactionObjectsArray = [];
     const rankModelUpdate = [];
-    let MetamaskAddress = [];
+    let userwallets = [];
     let userTransactions = [];
     // let userTickets = [];
+    const tableWallets = [];
 
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
-      MetamaskAddress.push(crrUser?.metaMaskAddress);
+      userwallets.push(crrUser?.wallet);
       // userTickets.push(crrUser.ticket);
     }
 
@@ -6555,21 +6556,24 @@ const createTransactionFromUsersArray = async (
       let totalWin = 0;
       let totalLose = 0;
       let prevAmount = 0;
+      tableWallets.push({ wallet: el?.wallet, userId: el.uid });
 
       let handsTransaction = [];
       if (!tournament) {
         handsTransaction = el.hands.map((elem) => {
           console.log({ elem });
+          const prvAmt = updatedAmount + userwallets[i];
           if (elem.action === "game-lose") {
             console.log("GAME LOSE");
             totalLossAmount += elem.amount;
+            updatedAmount -= elem.amount;
             totalLose++;
           } else {
             console.log("GAME WIN");
+            updatedAmount += elem.amount;
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          // const prvAmt = updatedAmount + usersWalltAmt[i];
           // updatedAmount -= elem.amount;
           // Get each transaction last and update wallet amount
           console.log(
@@ -6595,17 +6599,17 @@ const createTransactionFromUsersArray = async (
                 ? gameWinOrLoseamount * 2
                 : gameWinOrLoseamount,
             // transactionDetails: {},
-            // prevWallet: prvAmt,
-            // updatedWallet: updatedAmount + usersWalltAmt[i],
+            prevWallet: prvAmt,
+            updatedWallet: updatedAmount + userwallets[i],
             // transactionType: "poker",
             // prevTicket: prevTickets,
             // updatedTicket: crrTicket,
           };
         });
-        userTransactions.push({
-          address: el?.metaMaskAddress,
-          amount: el?.wallet,
-        });
+        // userTransactions.push({
+        //   address: el?.metaMaskAddress,
+        //   amount: el?.wallet,
+        // });
       }
 
       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
@@ -6637,7 +6641,7 @@ const createTransactionFromUsersArray = async (
       users[i].newBalance = updatedAmount;
     });
 
-    return [transactionObjectsArray, rankModelUpdate, userTransactions];
+    return [transactionObjectsArray, rankModelUpdate, tableWallets];
   } catch (error) {
     console.log("rreeeemmm", error);
   }
@@ -6762,12 +6766,12 @@ export const leaveApiCall = async (room, userId, io, socket) => {
 
     // console.log("users1====>", users);
 
-    const [transactions, rankModelUpdate, userTransactions] =
+    const [transactions, rankModelUpdate, tableWallets] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
 
     // console.log("users2====>", users);
 
-    console.log("userTransactions ======>", userTransactions);
+    // console.log("userTransactions ======>", userTransactions);
 
     // const userBalancePromise = users.map((el) => {
     //   let totalTicketWon = 0;
@@ -6796,20 +6800,33 @@ export const leaveApiCall = async (room, userId, io, socket) => {
 
     // console.log("transactions ====>", transactions);
 
-    const userTransactionProm = userTransactions
-      .filter((el) => el.amount > 0)
-      .map((el) => {
-        return sendTransactionToWinner(el?.amount, el?.address);
-      });
+    // const userTransactionProm = userTransactions
+    //   .filter((el) => el.amount > 0)
+    //   .map((el) => {
+    //     return sendTransactionToWinner(el?.amount, el?.address);
+    //   });
+
+    const userPromise = tableWallets.map((el) => {
+      return userModel.updateOne(
+        {
+          _id: el.userId,
+        },
+        {
+          $inc: {
+            wallet: el.wallet,
+          },
+        }
+      );
+    });
 
     const filterdHndWinnerData = room?.handWinner?.map((el) => {
       let filtrd = el.filter((obj) => obj.id.toString() !== userId.toString());
       return filtrd;
     });
 
-    console.log("io ==>", io);
-    console.log("userId ======>", userId, room.id, room._id);
-    io.in(room._id.toString()).emit("userTransaction", { userId });
+    // console.log("io ==>", io);
+    // console.log("userId ======>", userId, room.id, room._id);
+    // io.in(room._id.toString()).emit("userTransaction", { userId });
 
     if (userId) {
       const response = await Promise.allSettled([
@@ -6826,7 +6843,7 @@ export const leaveApiCall = async (room, userId, io, socket) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
-        ...userTransactionProm,
+        ...userPromise,
         // ...userBalancePromise,
         ...rankModelUpdate,
       ]);
@@ -6839,7 +6856,7 @@ export const leaveApiCall = async (room, userId, io, socket) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
-        ...userTransactionProm,
+        ...userPromise,
         // ...userBalancePromise,
         ...rankModelUpdate,
       ]);
@@ -6991,14 +7008,6 @@ export const checkForGameTable = async (data, socket, io) => {
 
     console.log("USER WALLET ", user.wallet);
     socket.emit("validatingTransaction", {});
-    const transaction = await getTransactionByHash(hash);
-    // console.log("transaction response ==>", transaction);
-    const transactionEth = ethers.utils.formatEther(transaction?.value);
-    const amntInDollar = await convertEthToUsd(transactionEth);
-    console.log("transaction amount ==>", amntInDollar, transactionEth);
-    if (amntInDollar !== sitInAmount) {
-      return socket.emit("socketError", { msg: "Mismatch transaction" });
-    }
     // return;
 
     const updatedRoom = await gameService.joinRoomByUserId(

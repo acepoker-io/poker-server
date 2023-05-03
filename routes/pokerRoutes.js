@@ -13,6 +13,13 @@ import {
 import { validateCreateTable } from "../validation/poker.validation.js";
 import auth from "../landing-server/middlewares/auth";
 import roomModel from "../models/room.js";
+import {
+  convertEthToUsd,
+  getTransactionByHash,
+} from "../service/transaction.js";
+
+import { ethers } from "ethers";
+import User from "../landing-server/models/user.model.js";
 
 const router = express.Router();
 const pokerRoute = (io) => {
@@ -44,6 +51,48 @@ const pokerRoute = (io) => {
       res.send(table);
     } catch (error) {
       console.log("error in getTableById ==>", error);
+    }
+  });
+
+  router.post("/depositTransaction", auth(), async (req, res) => {
+    try {
+      console.log("body", req.body);
+      const { txhash, amount, userId } = req.body;
+
+      const transaction = await getTransactionByHash(txhash);
+      // console.log("transaction response ==>", transaction);
+      const transactionEth = ethers.utils.formatEther(transaction?.value);
+      const amntInDollar = await convertEthToUsd(transactionEth);
+      console.log("transaction amount ==>", amntInDollar, transactionEth);
+      if (amntInDollar !== parseFloat(amount)) {
+        return res.status(401).send({
+          success: false,
+          message: "Invalid transaction",
+        });
+      } else {
+        const user = await User.findOneAndUpdate(
+          {
+            _id: userId,
+          },
+          {
+            $inc: { wallet: amount },
+          },
+          {
+            new: true,
+          }
+        );
+        return res.status(200).send({
+          success: true,
+          message: "Transaction suceessfull",
+          user,
+        });
+      }
+    } catch (e) {
+      console.log("error in getDepositTransaction", e);
+      res.status(400).send({
+        success: false,
+        message: "Internal server error",
+      });
     }
   });
 
