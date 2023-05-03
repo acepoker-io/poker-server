@@ -103,6 +103,7 @@ export const sendTransactionToWinner = async (amount, winnerAddress) => {
     return transferToWinner;
   } catch (error) {
     console.log("error in sendTransactionToWinner", error);
+    return false;
   }
 };
 

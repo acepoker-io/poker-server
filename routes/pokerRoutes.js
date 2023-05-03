@@ -16,6 +16,7 @@ import roomModel from "../models/room.js";
 import {
   convertEthToUsd,
   getTransactionByHash,
+  sendTransactionToWinner,
 } from "../service/transaction.js";
 
 import { ethers } from "ethers";
@@ -87,6 +88,54 @@ const pokerRoute = (io) => {
           user,
         });
       }
+    } catch (e) {
+      console.log("error in getDepositTransaction", e);
+      res.status(400).send({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  });
+
+  router.post("/withdrawTransaction", auth(), async (req, res) => {
+    try {
+      console.log("body ===>", req.body);
+      const { userId, amount } = req.body;
+      const user = await User.findOne({ _id: userId });
+      if (user.wallet < amount) {
+        return res.status(401).send({
+          success: false,
+          message: "You do not have enough balance",
+        });
+      }
+
+      const tranctionSuccessfull = await sendTransactionToWinner(
+        amount,
+        user.metaMaskAddress
+      );
+
+      if (!tranctionSuccessfull) {
+        return res
+          .status(400)
+          .send({ success: false, message: "Transaction has been failed" });
+      }
+
+      const updatedUser = await User.findOneAndUpdate(
+        {
+          _id: userId,
+        },
+        {
+          $inc: {
+            wallet: amount * -1,
+          },
+        },
+        { new: true }
+      );
+      return res.status(200).send({
+        success: true,
+        message: "Withdraw successfull",
+        user: updatedUser,
+      });
     } catch (e) {
       console.log("error in getDepositTransaction", e);
       res.status(400).send({
