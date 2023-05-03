@@ -74,9 +74,17 @@ export const blockUser = catchAsync(async (req, res, next) => {
   const block = await adminService.blockUser(req.params.id);
   return res.status(200).send({ block });
 });
+export const deleteUser = catchAsync(async (req, res, next) => {
+  const deleteUser = await adminService.deleteUser(req.params.id);
+  return res.status(200).send({ deleteUser });
+});
 
 export const updateUser = catchAsync(async (req, res, next) => {
   const user = await adminService.updateUser(req.params.id, req.body);
+  return res.status(200).send({ user });
+});
+export const createUser = catchAsync(async (req, res, next) => {
+  const user = await adminService.createUser(req.body);
   return res.status(200).send({ user });
 });
 
