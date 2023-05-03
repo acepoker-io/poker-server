@@ -39,6 +39,10 @@ export const convertEthToUsd = async (eth) => {
     parseFloat(usdRate),
     eth
   );
+  console.log(
+    "rounded amount",
+    Math.round(parseFloat(usdRate) * parseFloat(eth))
+  );
   return Math.round(parseFloat(usdRate) * parseFloat(eth));
 
   // .then((response) => response.json())
