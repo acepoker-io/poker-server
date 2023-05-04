@@ -10,19 +10,15 @@ const transactionSchema = new Schema(
     roomId: { type: Schema.Types.ObjectId, ref: "room", default: null },
     amount: { type: Number },
     prevWallet: { type: Number },
-    prevToken: { type: Number },
     updatedWallet: { type: Number },
-    updatedToken: { type: Number },
     transactionDetails: {},
     tournamentId: { type: String },
     transactionType: {
       type: String,
       enum: [
-        "poker",
-        "blackjack",
-        "slot",
-        "poker tournament",
-        "updated by admin",
+        "deposit",
+        "withdraw",
+        "commission"
       ],
     },
     prevTicket: { type: Number },

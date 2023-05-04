@@ -21,6 +21,7 @@ import {
 
 import { ethers } from "ethers";
 import User from "../landing-server/models/user.model.js";
+import transactionModel from "../models/transaction.js";
 
 const router = express.Router();
 const pokerRoute = (io) => {
@@ -71,6 +72,7 @@ const pokerRoute = (io) => {
           message: "Invalid transaction",
         });
       } else {
+        const userbeforeupdation = User.findOne({_id: userId})
         const user = await User.findOneAndUpdate(
           {
             _id: userId,
@@ -82,6 +84,14 @@ const pokerRoute = (io) => {
             new: true,
           }
         );
+        
+        await transactionModel.create({
+          userId,
+          amount,
+          prevWallet: userbeforeupdation.wallet,
+          updatedWallet: user.wallet,
+          transactionType: 'deposit'
+        })
         return res.status(200).send({
           success: true,
           message: "Transaction suceessfull",
@@ -120,6 +130,10 @@ const pokerRoute = (io) => {
           .send({ success: false, message: "Transaction has been failed" });
       }
 
+      const userbeforeupdation = await User.findOne({
+        _id: userId
+      })
+
       const updatedUser = await User.findOneAndUpdate(
         {
           _id: userId,
@@ -131,6 +145,15 @@ const pokerRoute = (io) => {
         },
         { new: true }
       );
+        
+      await transactionModel.create({
+        userId,
+        amount,
+        prevWallet: userbeforeupdation.wallet,
+        updatedWallet: updatedUser.wallet,
+        transactionType: 'withdraw'
+      });
+
       return res.status(200).send({
         success: true,
         message: "Withdraw successfull",

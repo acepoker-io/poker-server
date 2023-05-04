@@ -2137,10 +2137,8 @@ export const showdown = async (roomid, io) => {
       gameRestartSeconds,
     });
 
-    io.in(upRoomData._id.toString()).emit("executingCommission");
+    // io.in(upRoomData._id.toString()).emit("executingCommission");
 
-    const transaction = await sendCommisionToSharableAddress(totalCommision);
-    console.log("transaction ==>", transaction);
 
     const upRoom = await roomModel.findOneAndUpdate(
       {
@@ -2228,6 +2226,15 @@ export const showdown = async (roomid, io) => {
         }
       }
     }, gameRestartSeconds);
+    
+    const transaction = await sendCommisionToSharableAddress(totalCommision);
+    console.log("transaction ==>", transaction);
+    
+    await transactionModel.create({
+      roomId: upRoomData._id,
+      amount: totalCommision,
+      transactionType: 'commission'
+    })
   } catch (error) {
     console.log("error in showdown =>", error);
   }
@@ -5214,10 +5221,8 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       }
     );
 
-    io.in(updatedRoom._id.toString()).emit("executingCommission");
+    // io.in(updatedRoom._id.toString()).emit("executingCommission");
 
-    const transaction = await sendCommisionToSharableAddress(commision);
-    console.log("transaction ==>", transaction);
 
     console.log("showwwwww---->", updatedRoom.showdown);
 
@@ -5305,6 +5310,14 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         }
       }
     }, gameRestartSeconds);
+    
+    const transaction = await sendCommisionToSharableAddress(commision);
+    console.log("transaction ==>", transaction);
+    await transactionModel.create({
+      roomId: roomData._id,
+      amount: commision,
+      transactionType: 'commission'
+    })
   } catch (error) {
     console.log("error in winnerBeforeShowdwon", error);
   }
@@ -6555,7 +6568,7 @@ const createTransactionFromUsersArray = async (
       let totalLossAmount = 0;
       let totalWin = 0;
       let totalLose = 0;
-      let prevAmount = 0;
+      // let prevWallt = updatedAmount + userwallets[i];
       tableWallets.push({ wallet: el?.wallet, userId: el.uid });
 
       let handsTransaction = [];
@@ -6600,7 +6613,7 @@ const createTransactionFromUsersArray = async (
                 : gameWinOrLoseamount,
             // transactionDetails: {},
             prevWallet: prvAmt,
-            updatedWallet: updatedAmount + userwallets[i],
+            updatedWallet: updatedAmount > 0 ?  (updatedAmount + userwallets[i]) * 2 : updatedAmount + userwallets[i],
             // transactionType: "poker",
             // prevTicket: prevTickets,
             // updatedTicket: crrTicket,
@@ -7007,7 +7020,7 @@ export const checkForGameTable = async (data, socket, io) => {
     }
 
     console.log("USER WALLET ", user.wallet);
-    socket.emit("validatingTransaction", {});
+    // socket.emit("validatingTransaction", {});
     // return;
 
     const updatedRoom = await gameService.joinRoomByUserId(
