@@ -15,11 +15,7 @@ const transactionSchema = new Schema(
     tournamentId: { type: String },
     transactionType: {
       type: String,
-      enum: [
-        "deposit",
-        "withdraw",
-        "commission"
-      ],
+      enum: ["deposit", "withdraw", "commission", "updated by admin"],
     },
     prevTicket: { type: Number },
     updatedTicket: { type: Number },
