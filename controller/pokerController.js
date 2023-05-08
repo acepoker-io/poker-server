@@ -357,20 +357,25 @@ export const checkVerifyPrivateTable = async (req, res) => {
     res.status(500).send({ message: "Internal server error" });
   }
 };
+
 export const checkUserInGame = async (req, res) => {
-  const inGame = await userService.checkUserAvailableInGame(req.user._id);
-  if (inGame?.pokerGame) {
-    let API_URL;
-    if (req.headers.origin === "http://localhost:3000") {
-      API_URL = `http://localhost:${process.env.PORT}`;
+  try {
+    const inGame = await userService.checkUserAvailableInGame(req.user._id);
+    if (inGame?.pokerGame) {
+      let API_URL;
+      if (req.headers.origin === "http://localhost:3000") {
+        API_URL = `http://localhost:${process.env.PORT}`;
+      }
+      if (req.headers.origin === "https://beta.wptpoker.io") {
+        API_URL = "https://api.wptpoker.io";
+      }
+      return res.status(200).json({
+        inGame: true,
+        reJoinUrl: `${req.headers.origin}/table?gamecollection=poker&tableid=${inGame?.pokerGame?._id}`,
+        leaveTable: `${API_URL}/leaveGame/${inGame?.pokerGame?._id}/${req.user._id}`,
+      });
     }
-    if (req.headers.origin === "https://beta.wptpoker.io") {
-      API_URL = "https://api.wptpoker.io";
-    }
-    return res.status(200).json({
-      inGame: true,
-      reJoinUrl: `${req.headers.origin}/table?gamecollection=poker&tableid=${inGame?.pokerGame?._id}`,
-      leaveTable: `${API_URL}/leaveGame/${inGame?.pokerGame?._id}/${req.user._id}`,
-    });
+  } catch (err) {
+    console.log("error in check user in game :", inGame);
   }
 };

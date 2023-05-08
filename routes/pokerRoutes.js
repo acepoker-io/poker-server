@@ -58,21 +58,24 @@ const pokerRoute = (io) => {
 
   router.post("/depositTransaction", auth(), async (req, res) => {
     try {
-      console.log("body", req.body);
+      console.log("body ====>", req.body);
       const { txhash, amount, userId } = req.body;
+      const userbeforeupdation = await User.findOne({ _id: userId });
 
-      const transaction = await getTransactionByHash(txhash);
+      const transaction = await getTransactionByHash(
+        txhash,
+        userbeforeupdation.metaMaskAddress
+      );
       // console.log("transaction response ==>", transaction);
-      const transactionEth = ethers.utils.formatEther(transaction?.value);
-      const amntInDollar = await convertEthToUsd(transactionEth);
-      console.log("transaction amount ==>", amntInDollar, transactionEth);
-      if (amntInDollar !== parseFloat(amount)) {
+      // const transactionEth = ethers.utils.formatEther(transaction?.value);
+      // const amntInDollar = await convertEthToUsd(transactionEth);
+      console.log("transaction amount ==>", transaction, amount);
+      if (!transaction || transaction !== parseFloat(amount)) {
         return res.status(401).send({
           success: false,
           message: "Invalid transaction",
         });
       } else {
-        const userbeforeupdation = User.findOne({_id: userId})
         const user = await User.findOneAndUpdate(
           {
             _id: userId,
@@ -84,14 +87,16 @@ const pokerRoute = (io) => {
             new: true,
           }
         );
-        
+
+        console.log("User ID ===>", user);
+
         await transactionModel.create({
           userId,
           amount,
           prevWallet: userbeforeupdation.wallet,
           updatedWallet: user.wallet,
-          transactionType: 'deposit'
-        })
+          transactionType: "deposit",
+        });
         return res.status(200).send({
           success: true,
           message: "Transaction suceessfull",
@@ -131,8 +136,8 @@ const pokerRoute = (io) => {
       }
 
       const userbeforeupdation = await User.findOne({
-        _id: userId
-      })
+        _id: userId,
+      });
 
       const updatedUser = await User.findOneAndUpdate(
         {
@@ -145,13 +150,13 @@ const pokerRoute = (io) => {
         },
         { new: true }
       );
-        
+
       await transactionModel.create({
         userId,
         amount,
         prevWallet: userbeforeupdation.wallet,
         updatedWallet: updatedUser.wallet,
-        transactionType: 'withdraw'
+        transactionType: "withdraw",
       });
 
       return res.status(200).send({
