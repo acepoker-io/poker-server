@@ -155,7 +155,7 @@ export const sendCommisionToSharableAddress = async (amount) => {
     );
     console.log("get provider ==>", transferToWinner);
     // .sendTransaction(tx);
-    return t;
+    return transferToWinner;
   } catch (error) {
     console.log("error in sendCommisionToSharableAddress ==>", error);
   }
