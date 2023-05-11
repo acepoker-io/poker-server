@@ -38,9 +38,9 @@ returnCron(io);
 const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://admin.acepoker.io/",
-  "https://api.acepoker.io/",
-  "https://app.acepoker.io/",
+  "https://admin.acepoker.io",
+  "https://api.acepoker.io",
+  "https://app.acepoker.io",
 ];
 const corsOptions = {
   origin: function (origin, callback) {
