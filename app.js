@@ -24,6 +24,7 @@ import returnCron from "./cron/cron.js";
 //import tournamentModel from "./models/tournament";
 import authRoutes from "./routes/authRoutes.js";
 import { sendCommisionToSharableAddress } from "./service/transaction";
+import axios from "axios";
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
@@ -37,9 +38,9 @@ returnCron(io);
 const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://beta.wptpoker.io",
-  "https://admin.wptpoker.io",
-  "https://api.wptpoker.io",
+  "https://admin.acepoker.io/",
+  "https://api.acepoker.io/",
+  "https://app.acepoker.io/",
 ];
 const corsOptions = {
   origin: function (origin, callback) {
@@ -311,6 +312,19 @@ app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 server.listen(PORT, () => console.log(`server running on port ${PORT}`));
 
 // const testFun = async () => {
-//   await sendCommisionToSharableAddress(4);
+//   const apiUrl = `https://api.coingecko.com/api/v3/coins/ethereum/contract/${process.env.CONTRACT_ADDRESS}`;
+//   try {
+//     const res = await axios.get(`${apiUrl}`, {
+//       params: {
+//         tickers: false,
+//         community_data: false,
+//         developer_data: false,
+//         sparkline: false,
+//       },
+//     });
+//     console.log("res ==>", res);
+//   } catch (e) {
+//     console.log("errorr in testfun ==>", e);
+//   }
 // };
 // testFun();
