@@ -85,7 +85,8 @@ export const getTransactionByHash = async (hash, userAddress) => {
     if (userAddress !== transaction?.from) {
       return false;
     }
-
+    // const value = ethers.BigNumber.from(transaction.value);
+    // console.log("valueeeeee ===>", value);
     const transactionAmt = await getDecodedData(transaction);
     // const data = JSON.parse(ethers.utils.toUtf8String(transaction.data));
     // console.log("transaction data", data);
@@ -116,7 +117,8 @@ export const sendTransactionToWinner = async (amount, winnerAddress) => {
     const transferToWinner = await sdk.wallet.transfer(
       winnerAddress,
       amount,
-      process.env.CONTRACT_ADDRESS
+      "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+      // process.env.CONTRACT_ADDRESS
     );
 
     // const transferToWinner = await contract.call("transfer", [
@@ -177,8 +179,10 @@ const getDecodedData = async (recipt) => {
     // }
     const decoded = iface.parseTransaction({ data: recipt.data });
     console.log("decoded values ===>", decoded);
-    const wptAmt = Number(ethers.utils.formatEther(decoded.args["amount"]));
-    console.log("deco", wptAmt);
+    const wptAmt = Number(ethers.utils.formatEther(decoded.args["_amount"]));
+    // const wptAmt = ethers.utils.formatEther(decoded.args["_amount"]);
+    // console.log("deco", (wptAmt.toFixed(20) * 10));
+    
     return wptAmt;
 
     // if (
