@@ -12,6 +12,8 @@ const sdk = ThirdwebSDK.fromPrivateKey(
   process.env.CHAIN_ID
 );
 
+
+
 // const sdk = new ThirdwebSDK("arbitrum-goerli");
 // const contract = sdk.getContract("0xc3c637615164f840DD8De0ef782A206794e064f5");
 // contract.ThirdwebSDK();
@@ -113,13 +115,28 @@ export const sendTransactionToWinner = async (amount, winnerAddress) => {
     // const transferToWinner = await sdk.wallet.sendRawTransaction(tx);
     // const balance = await contract.erc20.balance();
     // console.log("balance ==>", balance);
+    const contract = await sdk.getContract(process.env.CONTRACT_ADDRESS);
 
-    const transferToWinner = await sdk.wallet.transfer(
-      winnerAddress,
-      amount,
-      "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
-      // process.env.CONTRACT_ADDRESS
-    );
+    // let balance = await contract.call("balanceOf", [process.env.OWNER_ADDRESS]);
+    // balance = ethers.utils.
+    let balance = await contract.erc20.balance();
+    console.log("balance ======>", balance);
+
+    balance = parseFloat(balance.displayValue);
+
+    if(amount > balance){
+      return false;
+    }
+    // const transferToWinner = await contract.erc20.transfer(winnerAddress, amount);
+    const transferToWinner = await contract.call("transfer", [winnerAddress, Math.pow(10,6) * parseInt(amount)], {gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei")})
+    // contract.call
+
+    // const transferToWinner = await sdk.wallet.transfer(
+    //   winnerAddress,
+    //   amount,
+    //   "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+    //   // process.env.CONTRACT_ADDRESS
+    // );
 
     // const transferToWinner = await contract.call("transfer", [
     //   winnerAddress,
@@ -167,43 +184,19 @@ const getDecodedData = async (recipt) => {
   try {
     console.log("rec", recipt.to);
     let iface, contractAddresss;
-    // let ABI = ["function transfer(address to, uint amount)"];
-    // if (recipt.to.toLowerCase() === jrContractAddress) {
-    // console.log("get decoded data executed");
+    
     iface = new ethers.utils.Interface(WPT_ABI);
     contractAddresss = process.env.CONTRACT_ADDRESS;
-    // } else {
-    //   console.log("OG");
-    //   iface = new ethers.utils.Interface(OG_ABI);
-    //   contractAddresss = process.env.OG_CONTRACT_ADDRESS;
-    // }
+    
     const decoded = iface.parseTransaction({ data: recipt.data });
     console.log("decoded values ===>", decoded);
     const wptAmt = Number(ethers.utils.formatEther(decoded.args["_amount"]));
-    // const wptAmt = ethers.utils.formatEther(decoded.args["_amount"]);
-    // console.log("deco", (wptAmt.toFixed(20) * 10));
     
-    return wptAmt;
+    console.log("deco", (wptAmt * Math.pow(10,12)));
+    
+    return (wptAmt * Math.pow(10,12));
 
-    // if (
-    //   recipt.to.toLowerCase() === ogContractAddress ||
-    //   recipt.to.toLowerCase() === jrContractAddress
-    // ) {
-    //   const res = await fetch(
-    //     `https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/${contractAddresss}`
-    //   );
-    //   const data = await res.json();
-    //   const current_price = data.market_data.current_price.usd;
-    //   console.log("curr", current_price);
-
-    //   const cryptoUsd = cryptoAmt * current_price;
-    //   console.log("cryp to Usd", cryptoUsd);
-
-    //   console.log("cryptoToUsd", Math.round(cryptoUsd));
-    //   return pids[Math.round(cryptoUsd)];
-    // }
-    // return cryptoAmt;
-  } catch (error) {
+   } catch (error) {
     console.log("error", error);
   }
 };
