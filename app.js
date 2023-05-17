@@ -23,8 +23,9 @@ import User from "./landing-server/models/user.model.js";
 import returnCron from "./cron/cron.js";
 //import tournamentModel from "./models/tournament";
 import authRoutes from "./routes/authRoutes.js";
-import { sendCommisionToSharableAddress } from "./service/transaction";
+import { getTransactionReceiptByHash, sendCommisionToSharableAddress } from "./service/transaction";
 import axios from "axios";
+
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
@@ -312,17 +313,9 @@ app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 server.listen(PORT, () => console.log(`server running on port ${PORT}`));
 
 // const testFun = async () => {
-//   const apiUrl = `https://api.coingecko.com/api/v3/coins/ethereum/contract/${process.env.CONTRACT_ADDRESS}`;
 //   try {
-//     const res = await axios.get(`${apiUrl}`, {
-//       params: {
-//         tickers: false,
-//         community_data: false,
-//         developer_data: false,
-//         sparkline: false,
-//       },
-//     });
-//     console.log("res ==>", res);
+//     const transactionRecipt = await thirdWeb.getTransactionReceipt('0xfcee673d4521ca31e5a871dacb2bfaf3e19673c8c5ffc178df4a9f9d1e64b489');
+//     console.log("transactionRecipt ==>", transactionRecipt);
 //   } catch (e) {
 //     console.log("errorr in testfun ==>", e);
 //   }

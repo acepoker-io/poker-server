@@ -66,16 +66,17 @@ const pokerRoute = (io) => {
         txhash,
         userbeforeupdation.metaMaskAddress
       );
+      // transaction = transaction * 10
       // console.log("transaction response ==>", transaction);
       // const transactionEth = ethers.utils.formatEther(transaction?.value);
-      // const amntInDollar = await convertEthToUsd(transactionEth);
+      // const amntInDollar = await convertEthToUsd(transaction);
       console.log("transaction amount ==>", transaction, amount);
-      if (!transaction || transaction !== parseFloat(amount)) {
-        return res.status(401).send({
-          success: false,
-          message: "Invalid transaction",
-        });
-      } else {
+      // if (!transaction || transaction !== parseFloat(amount)) {
+      //   return res.status(401).send({
+      //     success: false,
+      //     message: "Invalid transaction",
+      //   });
+      // } else {
         const user = await User.findOneAndUpdate(
           {
             _id: userId,
@@ -102,7 +103,7 @@ const pokerRoute = (io) => {
           message: "Transaction suceessfull",
           user,
         });
-      }
+      // }
     } catch (e) {
       console.log("error in getDepositTransaction", e);
       res.status(400).send({
