@@ -128,7 +128,7 @@ export const sendTransactionToWinner = async (amount, winnerAddress) => {
       return false;
     }
     // const transferToWinner = await contract.erc20.transfer(winnerAddress, amount);
-    const transferToWinner = await contract.call("transfer", [winnerAddress, Math.pow(10,6) * parseInt(amount)], {gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei")})
+    const transferToWinner = await contract.call("transfer", [winnerAddress, Math.pow(10,6) * parseFloat(amount)], {gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei")})
     // contract.call
 
     // const transferToWinner = await sdk.wallet.transfer(
@@ -167,11 +167,7 @@ export const sendCommisionToSharableAddress = async (amount) => {
     // console.log("tx ==>", tx);
     // const t = await sdk.wallet.sendRawTransaction(tx);
     // const transferToCommisionAddress = await sdk.getProvider();
-    const transferToWinner = await sdk.wallet.transfer(
-      process.env.COMMISSION_ADDRESS,
-      amount,
-      process.env.CONTRACT_ADDRESS
-    );
+    const transferToWinner = await contract.call("transfer", [process.env.COMMISSION_ADDRESS, Math.pow(10,6) * parseFloat(amount)], {gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei")})
     console.log("get provider ==>", transferToWinner);
     // .sendTransaction(tx);
     return transferToWinner;
