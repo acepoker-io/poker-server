@@ -7019,6 +7019,13 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
+    if(sitInAmount > user?.wallet){
+      console.log("sitin amount is greater than wallet");
+      return socket.emit("sitinamounExceeds", {
+        message: `You can only join with ${user?.wallet}`,
+      });
+    }
+
     console.log("USER WALLET ", user.wallet);
     // socket.emit("validatingTransaction", {});
     // return;
