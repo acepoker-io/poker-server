@@ -7228,7 +7228,12 @@ export const JoinTournament = async (data, io, socket) => {
     // let roomWithSpace = rooms.find((room) => room.players.length < playerLimit);
     const userData = await User.findById(userId).lean();
 
-    if (tournament.waitingArray.filter((el) => el.id === userId)) {
+    console.log(
+      "tournament joined ==>",
+      tournament.waitingArray.filter((el) => el.id === userId).length
+    );
+
+    if (tournament.waitingArray.filter((el) => el.id === userId).length) {
       return socket.emit("notEnoughAmount", {
         message: "You have already join this tournament.",
         code: 400,
