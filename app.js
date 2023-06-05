@@ -23,8 +23,12 @@ import User from "./landing-server/models/user.model.js";
 import returnCron from "./cron/cron.js";
 //import tournamentModel from "./models/tournament";
 import authRoutes from "./routes/authRoutes.js";
-import { getTransactionReceiptByHash, sendCommisionToSharableAddress } from "./service/transaction";
+import {
+  getTransactionReceiptByHash,
+  sendCommisionToSharableAddress,
+} from "./service/transaction";
 import axios from "axios";
+import tournamentRoute from "./routes/tournamentRoutes";
 
 let app = express();
 dotenv.config();
@@ -307,6 +311,7 @@ app.use("/poker", pokerRoute(io)); //, auth()
 // app.use("/v1/admin/auth", adminRoute);
 app.use("/auth", authRoutes);
 app.use("/v1/admin/auth", adminRoute(io));
+app.use("/v1/poker/tournament", tournamentRoute(io));
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 //server
