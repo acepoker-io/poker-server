@@ -2139,7 +2139,6 @@ export const showdown = async (roomid, io) => {
 
     // io.in(upRoomData._id.toString()).emit("executingCommission");
 
-
     const upRoom = await roomModel.findOneAndUpdate(
       {
         _id: roomid,
@@ -2226,15 +2225,15 @@ export const showdown = async (roomid, io) => {
         }
       }
     }, gameRestartSeconds);
-    
+
     const transaction = await sendCommisionToSharableAddress(totalCommision);
     console.log("transaction ==>", transaction);
-    
+
     await transactionModel.create({
       roomId: upRoomData._id,
       amount: totalCommision,
-      transactionType: 'commission'
-    })
+      transactionType: "commission",
+    });
   } catch (error) {
     console.log("error in showdown =>", error);
   }
@@ -5223,7 +5222,6 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 
     // io.in(updatedRoom._id.toString()).emit("executingCommission");
 
-
     console.log("showwwwww---->", updatedRoom.showdown);
 
     // await finishHandApiCall(updatedRoom);
@@ -5310,14 +5308,14 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         }
       }
     }, gameRestartSeconds);
-    
+
     const transaction = await sendCommisionToSharableAddress(commision);
     console.log("transaction ==>", transaction);
     await transactionModel.create({
       roomId: roomData._id,
       amount: commision,
-      transactionType: 'commission'
-    })
+      transactionType: "commission",
+    });
   } catch (error) {
     console.log("error in winnerBeforeShowdwon", error);
   }
@@ -6613,7 +6611,10 @@ const createTransactionFromUsersArray = async (
                 : gameWinOrLoseamount,
             // transactionDetails: {},
             prevWallet: prvAmt,
-            updatedWallet: updatedAmount > 0 ?  (updatedAmount + userwallets[i]) * 2 : updatedAmount + userwallets[i],
+            updatedWallet:
+              updatedAmount > 0
+                ? (updatedAmount + userwallets[i]) * 2
+                : updatedAmount + userwallets[i],
             // transactionType: "poker",
             // prevTicket: prevTickets,
             // updatedTicket: crrTicket,
@@ -7019,7 +7020,7 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    if(sitInAmount > user?.wallet){
+    if (sitInAmount > user?.wallet) {
       console.log("sitin amount is greater than wallet");
       return socket.emit("sitinamounExceeds", {
         message: `You can only join with ${user?.wallet}`,
@@ -7201,45 +7202,70 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    if (
-      rooms.find((room) =>
-        room.players.find(
-          (pl) =>
-            pl.userid.toString() === userId.toString() ||
-            pl.id.toString() === userId.toString()
-        )
-          ? true
-          : false
-      )
-    ) {
-      return socket.emit("alreadyInTournament", {
-        message: "You are already in game.",
-        code: 400,
-      });
-    }
-
-    if (tournament.havePlayers >= 10000) {
+    // if (
+    //   rooms.find((room) =>
+    //     room.players.find(
+    //       (pl) =>
+    //         pl.userid.toString() === userId.toString() ||
+    //         pl.id.toString() === userId.toString()
+    //     )
+    //       ? true
+    //       : false
+    //   )
+    // ) {
+    //   return socket.emit("alreadyInTournament", {
+    //     message: "You are already in game.",
+    //     code: 400,
+    //   });
+    // }
+    console.log(tournament.havePlayers, tournament.waitingArray.length);
+    if (tournament.waitingArray.length >= tournament.havePlayers) {
       return socket.emit("tournamentSlotFull", {
         message: "No empty slot",
       });
     }
 
-    let roomWithSpace = rooms.find((room) => room.players.length < playerLimit);
+    // let roomWithSpace = rooms.find((room) => room.players.length < playerLimit);
     const userData = await User.findById(userId).lean();
+
+    if (tournament.waitingArray.filter((el) => el.id === userId)) {
+      return socket.emit("notEnoughAmount", {
+        message: "You have already join this tournament.",
+        code: 400,
+      });
+    }
+
     if (userData?.wallet < fees) {
       return socket.emit("notEnoughAmount", {
         message: "You have not much amount to join.",
         code: 400,
       });
     }
-    await pushPlayerInRoom(
-      tournament,
-      userData,
-      tournamentId,
-      roomWithSpace,
-      socket,
-      io
+
+    let waitingArray = [
+      ...tournament.waitingArray,
+      { id: userId, userName: userData?.username },
+    ];
+
+    const updtdTourn = await tournamentModel.findOneAndUpdate(
+      {
+        _id: tournament._id,
+      },
+      {
+        waitingArray: waitingArray,
+      },
+      { new: true }
     );
+    // console.log(updtdTourn);
+
+    // await pushPlayerInRoom(
+    //   tournament,
+    //   userData,
+    //   tournamentId,
+    //   roomWithSpace,
+    //   socket,
+    //   io
+    // );
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId },
       { $inc: { wallet: -parseFloat(fees) } },
