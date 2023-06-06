@@ -3893,14 +3893,15 @@ export const socketDoCall = async (dta, io, socket) => {
     if (isValid) {
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = mongoose.Types.ObjectId(userid);
-      let amt = parseInt(dta.amount);
+      let amt = parseFloat(dta.amount);
+      console.log("amount ===>", dta.amount);
       const data = await roomModel
         .findOne({
           _id: roomid,
         })
         .lean();
       if (data !== null) {
-        if (data.raiseAmount == amt) {
+        if (data.raiseAmount === amt) {
           const walletAmt = await getPlayerwallet(data, playerid);
           if (walletAmt >= amt) {
             await doCall(data, playerid, io, amt);
@@ -3913,7 +3914,7 @@ export const socketDoCall = async (dta, io, socket) => {
         } else {
           socket.emit("actionError", {
             code: 400,
-            msg: `Call amount must be ${data.raiseAmount}`,
+            msg: `Call amount must be ${amt}`,
           });
         }
       } else {
@@ -6827,7 +6828,7 @@ export const leaveApiCall = async (room, userId, io, socket) => {
         },
         {
           $inc: {
-            wallet: el.wallet,
+            wallet: el.wallet < 0 ? 0 : el.wallet,
           },
         }
       );

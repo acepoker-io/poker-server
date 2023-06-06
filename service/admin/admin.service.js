@@ -35,7 +35,7 @@ const deleteUser = async (id) => {
   if (!users) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not exist");
   }
-  const deleteUser=await User.deleteOne({_id: id })
+  const deleteUser = await User.deleteOne({ _id: id });
   if (deleteUser) {
     return true;
   }
@@ -143,21 +143,17 @@ const updateUser = async (userId, updateBody) => {
   }
   return false;
 };
-const createUser = async ( userBody) => {
-  const {
-    username,
-  } = userBody;
-    const existName = await User.findOne({
-      username: username?.toLowerCase()?.trim(),
-    });
-    if (existName) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
-    }
-  const createUser = await User.create(
-    {
-      username: username?.toLowerCase()?.trim(),
-    }
-  );
+const createUser = async (userBody) => {
+  const { username } = userBody;
+  const existName = await User.findOne({
+    username: username?.toLowerCase()?.trim(),
+  });
+  if (existName) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
+  }
+  const createUser = await User.create({
+    username: username?.toLowerCase()?.trim(),
+  });
   if (createUser) {
     return true;
   }
@@ -270,7 +266,7 @@ const updateUserWallet = async (id, body) => {
   const user = await User.findOne({ _id: id });
   const block = await User.updateOne(
     { _id: id },
-    { $inc: { wallet: parseInt(body?.wallet) } }
+    { $set: { wallet: parseInt(body?.wallet) } }
   );
   transactionModel.create({
     userId: id,
@@ -372,6 +368,6 @@ const adminService = {
   monthlyGameStats,
   allTransaction,
   updateUserWallet,
-  createUser
+  createUser,
 };
 export default adminService;

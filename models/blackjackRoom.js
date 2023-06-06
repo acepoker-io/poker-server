@@ -1,5 +1,5 @@
 //imports
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
@@ -9,7 +9,7 @@ const roomSchema = new Schema({
   gameName: { type: String },
   gamestart: { type: Boolean, default: false },
   winnerPlayer: [],
-  timer: { type: Number, default: 15 },
+  timer: { type: Number, default: 25 },
   hostId: { type: String, default: null },
   handWinner: [],
   firstGameTime: { type: Date },
@@ -36,11 +36,11 @@ const roomSchema = new Schema({
   },
 });
 
-roomSchema.pre('save', function (next) {
+roomSchema.pre("save", function (next) {
   this.tableId = this._id.toString();
   next();
 });
 
-const roomModel = mongoose.model('blackjackroom', roomSchema);
+const roomModel = mongoose.model("blackjackroom", roomSchema);
 
 export default roomModel;

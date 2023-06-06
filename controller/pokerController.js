@@ -42,7 +42,7 @@ export const createTable = async (req, res, io) => {
     console.log("req body ==>", req.body);
     const userData = req.user;
     const { username, wallet, email, _id, avatar, profile } = userData;
-    const timer = 15;
+    const timer = 25;
 
     const checkInGame = await gameService.checkIfUserInGame(userData._id);
 

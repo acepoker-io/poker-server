@@ -12,8 +12,6 @@ const sdk = ThirdwebSDK.fromPrivateKey(
   process.env.CHAIN_ID
 );
 
-
-
 // const sdk = new ThirdwebSDK("arbitrum-goerli");
 // const contract = sdk.getContract("0xc3c637615164f840DD8De0ef782A206794e064f5");
 // contract.ThirdwebSDK();
@@ -124,11 +122,15 @@ export const sendTransactionToWinner = async (amount, winnerAddress) => {
 
     balance = parseFloat(balance.displayValue);
 
-    if(amount > balance){
+    if (amount > balance) {
       return false;
     }
     // const transferToWinner = await contract.erc20.transfer(winnerAddress, amount);
-    const transferToWinner = await contract.call("transfer", [winnerAddress, Math.pow(10,6) * parseFloat(amount)], {gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei")})
+    const transferToWinner = await contract.call(
+      "transfer",
+      [winnerAddress, Math.pow(10, 6) * parseFloat(amount)],
+      { gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei") }
+    );
     // contract.call
 
     // const transferToWinner = await sdk.wallet.transfer(
@@ -164,10 +166,15 @@ export const sendCommisionToSharableAddress = async (amount) => {
     //   gasLimit: 10000000,
     //   value: ethers.utils.parseEther(value.toFixed(9).toString()),
     // };
+    const contract = await sdk.getContract(process.env.CONTRACT_ADDRESS);
     // console.log("tx ==>", tx);
     // const t = await sdk.wallet.sendRawTransaction(tx);
     // const transferToCommisionAddress = await sdk.getProvider();
-    const transferToWinner = await contract.call("transfer", [process.env.COMMISSION_ADDRESS, Math.pow(10,6) * parseFloat(amount)], {gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei")})
+    const transferToWinner = await contract.call(
+      "transfer",
+      [process.env.COMMISSION_ADDRESS, Math.pow(10, 6) * parseFloat(amount)],
+      { gasLimit: 1000000, gasPrice: ethers.utils.parseUnits("1", "gwei") }
+    );
     console.log("get provider ==>", transferToWinner);
     // .sendTransaction(tx);
     return transferToWinner;
@@ -180,19 +187,18 @@ const getDecodedData = async (recipt) => {
   try {
     console.log("rec", recipt.to);
     let iface, contractAddresss;
-    
+
     iface = new ethers.utils.Interface(WPT_ABI);
     contractAddresss = process.env.CONTRACT_ADDRESS;
-    
+
     const decoded = iface.parseTransaction({ data: recipt.data });
     console.log("decoded values ===>", decoded);
     const wptAmt = Number(ethers.utils.formatEther(decoded.args["_amount"]));
-    
-    console.log("deco", (wptAmt * Math.pow(10,12)));
-    
-    return (wptAmt * Math.pow(10,12));
 
-   } catch (error) {
+    console.log("deco", wptAmt * Math.pow(10, 12));
+
+    return wptAmt * Math.pow(10, 12);
+  } catch (error) {
     console.log("error", error);
   }
 };
