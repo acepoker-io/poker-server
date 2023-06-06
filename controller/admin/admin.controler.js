@@ -223,7 +223,7 @@ export const createTable = async (req, res, io) => {
     }
     const { /* username, wallet, email, */ _id /* avatar, profile */ } =
       userData;
-    const timer = 15;
+    const timer = 25;
 
     // const checkInGame = await pokerTournamentService.checkIfUserInGame(userData._id);
 

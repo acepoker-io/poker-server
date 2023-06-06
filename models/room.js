@@ -39,7 +39,7 @@ const roomSchema = new Schema({
 
   joinRequests: [],
   eleminated: [],
-  timer: { type: Number, default: 15 },
+  timer: { type: Number, default: 25 },
   emergencyTimer: { type: Number, default: 0 },
   minchips: { type: Number, default: 0 },
   maxchips: { type: Number, default: 0 },
