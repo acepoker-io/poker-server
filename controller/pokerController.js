@@ -366,7 +366,7 @@ export const checkUserInGame = async (req, res) => {
       if (req.headers.origin === "http://localhost:3000") {
         API_URL = `http://localhost:${process.env.PORT}`;
       }
-      if (req.headers.origin === "https://beta.wptpoker.io") {
+      if (req.headers.origin === "https://app.acepoker.io") {
         API_URL = "https://api.wptpoker.io";
       }
       return res.status(200).json({

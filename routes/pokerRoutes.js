@@ -22,6 +22,7 @@ import {
 import { ethers } from "ethers";
 import User from "../landing-server/models/user.model.js";
 import transactionModel from "../models/transaction.js";
+import { getAllTournament } from "../controller/admin/pokerTournament.controller.js.js";
 
 const router = express.Router();
 const pokerRoute = (io) => {
@@ -173,6 +174,8 @@ const pokerRoute = (io) => {
       });
     }
   });
+
+  router.get("/AllTournament", getAllTournament);
 
   return router;
 };
