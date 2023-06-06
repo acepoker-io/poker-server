@@ -363,6 +363,7 @@ export const checkUserInGame = async (req, res) => {
     const inGame = await userService.checkUserAvailableInGame(req.user._id);
     if (inGame?.pokerGame) {
       let API_URL;
+      console.log("request headers origin", req.headers.origin);
       if (req.headers.origin === "http://localhost:3000") {
         API_URL = `http://localhost:${process.env.PORT}`;
       }
