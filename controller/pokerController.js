@@ -367,7 +367,7 @@ export const checkUserInGame = async (req, res) => {
         API_URL = `http://localhost:${process.env.PORT}`;
       }
       if (req.headers.origin === "https://app.acepoker.io") {
-        API_URL = "https://api.wptpoker.io";
+        API_URL = "https://app.acepoker.io";
       }
       return res.status(200).json({
         inGame: true,
