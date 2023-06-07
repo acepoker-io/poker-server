@@ -84,8 +84,12 @@ export const updateUser = catchAsync(async (req, res, next) => {
   return res.status(200).send({ user });
 });
 export const createUser = catchAsync(async (req, res, next) => {
-  const user = await adminService.createUser(req.body);
-  return res.status(200).send({ user });
+  const result = await adminService.createUser(req.body);
+  if (result.success) {
+    return res.status(200).send({ result });
+  } else {
+    return res.status(404).send({ message: result.message });
+  }
 });
 
 export const dashboardCount = catchAsync(async (req, res, next) => {
