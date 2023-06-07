@@ -6616,7 +6616,7 @@ const createTransactionFromUsersArray = async (
               updatedAmount > 0
                 ? (updatedAmount + userwallets[i]) * 2
                 : updatedAmount + userwallets[i],
-            // transactionType: "poker",
+            transactionType: "poker",
             // prevTicket: prevTickets,
             // updatedTicket: crrTicket,
           };
