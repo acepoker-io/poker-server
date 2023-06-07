@@ -144,20 +144,37 @@ const updateUser = async (userId, updateBody) => {
   return false;
 };
 const createUser = async (userBody) => {
-  const { username } = userBody;
-  const existName = await User.findOne({
-    username: username?.toLowerCase()?.trim(),
-  });
-  if (existName) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
+  try {
+    const { username } = userBody;
+    const existName = await User.findOne({
+      username: username?.toLowerCase()?.trim(),
+    });
+    if (existName) {
+      // throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
+      return {
+        success: false,
+        message: "Username already taken",
+      };
+    }
+    const createUser = await User.create({
+      username: username?.toLowerCase()?.trim(),
+    });
+    if (createUser) {
+      return {
+        success: true,
+        message: "User created successfully",
+      };
+    }
+    return {
+      success: false,
+      message: "Something went wrong",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: "Internal server error",
+    };
   }
-  const createUser = await User.create({
-    username: username?.toLowerCase()?.trim(),
-  });
-  if (createUser) {
-    return true;
-  }
-  return false;
 };
 const allDashboardCount = async () => {
   try {
