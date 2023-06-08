@@ -907,11 +907,11 @@ export const prefloptimer = async (roomid, io) => {
               if (j <= 0) {
                 clearInterval(playerinterval);
                 if (
-                  (data.raiseAmount === intervalPlayer[0].pot ||
+                  (data.raiseAmount === intervalPlayer[0]?.pot ||
                     data.lastAction === "check") &&
                   data.players.length !== 1
                 ) {
-                  await doCheck(roomid, intervalPlayer[0].id, io);
+                  await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
                   const isContinue = await doFold(
@@ -2185,21 +2185,30 @@ export const showdown = async (roomid, io) => {
               });
               if (updatedRoomPlayers?.finish) {
                 await finishedTableGame(updatedRoomPlayers, "", io);
-
-                io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
-                  msg: "Room finished",
-                  finish: updatedRoomPlayers?.finish,
-                  roomdata: updatedRoomPlayers,
-                });
+                if (updatedRoomPlayers.players.length > 0) {
+                  io.in(updatedRoomPlayers._id.toString()).emit(
+                    "roomFinished",
+                    {
+                      msg: "Room finished",
+                      finish: updatedRoomPlayers?.finish,
+                      roomdata: updatedRoomPlayers,
+                    }
+                  );
+                }
               }
               if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
                 console.log("Line 2275 Game finished ");
                 await finishedTableGame(updatedRoomPlayers, "", io);
-                io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
-                  msg: "Game finished",
-                  finish: updatedRoomPlayers.finish,
-                  roomdata: updatedRoomPlayers,
-                });
+                if (updatedRoomPlayers.players.length > 0) {
+                  io.in(updatedRoomPlayers._id.toString()).emit(
+                    "roomFinished",
+                    {
+                      msg: "Game finished",
+                      finish: updatedRoomPlayers.finish,
+                      roomdata: updatedRoomPlayers,
+                    }
+                  );
+                }
               }
             }
           }
@@ -2217,11 +2226,13 @@ export const showdown = async (roomid, io) => {
         const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
         if (roomUpdate?.finish) {
           await finishedTableGame(roomUpdate, "", io);
-          io.in(roomUpdate._id.toString()).emit("roomFinished", {
-            msg: "Game finished",
-            finish: roomUpdate?.finish,
-            roomdata: roomUpdate,
-          });
+          if (roomUpdate.players.length > 0) {
+            io.in(roomUpdate._id.toString()).emit("roomFinished", {
+              msg: "Game finished",
+              finish: roomUpdate?.finish,
+              roomdata: roomUpdate,
+            });
+          }
         }
       }
     }, gameRestartSeconds);
@@ -2911,11 +2922,13 @@ export const doFinishGame = async (data, io, socket) => {
         if (updatedData.runninground === 0) {
           await finishedTableGame(updatedData, userid, io, socket);
         }
-        io.in(updatedData._id.toString()).emit("roomFinished", {
-          msg: msg,
-          finish: updatedData.finish,
-          roomdata: updatedData,
-        });
+        if (updatedData.players.length > 0 && updatedData.runninground !== 0) {
+          io.in(updatedData._id.toString()).emit("roomFinished", {
+            msg: msg,
+            finish: updatedData.finish,
+            roomdata: updatedData,
+          });
+        }
       } else {
         console.log("userId =====;...>", userid);
         await finishedTableGame(roomData, userid, io, socket);
@@ -2960,7 +2973,7 @@ export const doSitOut = async (data, io, socket) => {
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-  // console.log({ tableId, userid });
+  console.log("do sit out called ");
   const { isValid } = checkIfEmpty({ tableId, userid });
   let playingPlayer = [];
   let res = true;
@@ -3002,14 +3015,16 @@ export const doSitOut = async (data, io, socket) => {
               },
               { new: true }
             );
-            if (action !== "Leave") {
+            // console.log("updated room data ===>", updatedRoom.players.length);
+            if (action !== "Leave" && updatedData.players.length > 0) {
               io.in(updatedData._id.toString()).emit("notification", {
                 id: userid,
                 action: "SitOut",
                 msg: "",
               });
             }
-            if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+            if (socket && updatedData.players.length > 0)
+              socket.emit("sitInOut", { updatedRoom: updatedData });
             break;
 
           case 1:
@@ -3058,7 +3073,9 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            if (action !== "Leave") {
+            console.log("updated players ==>", updatedData.players.length);
+
+            if (action !== "Leave" && updatedData.players.length > 0) {
               io.in(updatedData._id.toString()).emit("notification", {
                 id: userid,
                 action: "SitOut",
@@ -3115,13 +3132,13 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            if (action !== "Leave") {
+            if (action !== "Leave" && updatedData.players.length > 0) {
               io.in(updatedData._id.toString()).emit("notification", {
                 id: userid,
                 action: "SitOut",
               });
             }
-            if (socket) {
+            if (socket && updatedData.players.length > 0) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
             return res;
@@ -3172,13 +3189,13 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            if (action !== "Leave") {
+            if (action !== "Leave" && updatedData.players.length > 0) {
               io.in(updatedData._id.toString()).emit("notification", {
                 id: userid,
                 action: "SitOut",
               });
             }
-            if (socket) {
+            if (socket && updatedData.players.length > 0) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
             return res;
@@ -3229,13 +3246,13 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            if (action !== "Leave") {
+            if (action !== "Leave" && updatedData.players.length > 0) {
               io.in(updatedData._id.toString()).emit("notification", {
                 id: userid,
                 action: "SitOut",
               });
             }
-            if (socket) {
+            if (socket && updatedData.players.length > 0) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
             return res;
@@ -3255,13 +3272,14 @@ export const doSitOut = async (data, io, socket) => {
               { new: true }
             );
             if (updatedData) {
-              if (action !== "Leave") {
+              if (action !== "Leave" && updatedData.players.length > 0) {
                 io.in(updatedData._id.toString()).emit("notification", {
                   id: userid,
                   action: "SitOut",
                 });
               }
-              if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+              if (socket && updatedData.players.length > 0)
+                socket.emit("sitInOut", { updatedRoom: updatedData });
             }
             break;
 
@@ -5279,11 +5297,16 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
               });
               if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
                 await finishedTableGame(updatedRoomPlayers, playerid, io);
-                io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
-                  msg: "Game finished",
-                  finish: updatedRoomPlayers.finish,
-                  roomdata: updatedRoomPlayers,
-                });
+                if (updatedRoomPlayers.players.length > 0) {
+                  io.in(updatedRoomPlayers._id.toString()).emit(
+                    "roomFinished",
+                    {
+                      msg: "Game finished",
+                      finish: updatedRoomPlayers.finish,
+                      roomdata: updatedRoomPlayers,
+                    }
+                  );
+                }
               }
             }
           }
@@ -5301,11 +5324,13 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id });
         if (roomUpdate?.finish) {
           await finishedTableGame(roomUpdate, playerid, io);
-          io.in(roomUpdate._id.toString()).emit("roomFinished", {
-            msg: "Room Finished",
-            finish: roomUpdate?.finish,
-            roomdata: roomUpdate,
-          });
+          if (roomUpdate.players.length > 0) {
+            io.in(roomUpdate._id.toString()).emit("roomFinished", {
+              msg: "Room Finished",
+              finish: roomUpdate?.finish,
+              roomdata: roomUpdate,
+            });
+          }
         }
       }
     }, gameRestartSeconds);
