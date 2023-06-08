@@ -147,7 +147,7 @@ const createUser = async (userBody) => {
   try {
     const { username } = userBody;
     const existName = await User.findOne({
-      username: username?.toLowerCase()?.trim(),
+      username: username.toString().trim(),
     });
     if (existName) {
       // throw new ApiError(httpStatus.BAD_REQUEST, "Username already taken");
@@ -157,7 +157,7 @@ const createUser = async (userBody) => {
       };
     }
     const createUser = await User.create({
-      username: username?.toLowerCase()?.trim(),
+      username: username?.toString().trim(),
     });
     if (createUser) {
       return {
