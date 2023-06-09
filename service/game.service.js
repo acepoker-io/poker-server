@@ -232,32 +232,31 @@ const sendAcknowledgementForJoinTournament = async (io) => {
       .exec();
     if (findTournament?.length > 0) {
       findTournament.forEach(async (el) => {
-        const matched = subSubtractTimeForSendMail(
-          el.tournamentDate,
-          el.startDate
+        // const matched = subSubtractTimeForSendMail(
+        //   el.tournamentDate,
+        //   el.startDate
+        // );
+        // if (matched) {
+        await tournamentModel.updateOne(
+          { _id: el._id },
+          { showButton: true },
+          { new: true }
         );
-        if (matched) {
-          await tournamentModel.updateOne(
-            { _id: el._id },
-            { showButton: true },
-            { new: true }
-          );
-          io.emit("tournamentUpdate", { updateTournament: true });
-          const room = findRoom(el.rooms);
-          const { players, roomId } = room;
-          if (players && players?.length > 0) {
-            players.forEach(async (player) => {
-              const payload = {
-                sender: player.userid,
-                receiver: player.userid,
-                message: "Poker tournament start in 2 minutes",
-                url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
-              };
-
-              await Notification.create(payload);
-            });
-          }
+        io.emit("tournamentUpdate", { updateTournament: true });
+        const room = findRoom(el.rooms);
+        const { players, roomId } = room;
+        if (players && players?.length > 0) {
+          players.forEach(async (player) => {
+            const payload = {
+              sender: player.userid,
+              receiver: player.userid,
+              message: "Poker tournament start in 2 minutes",
+              url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
+            };
+            await Notification.create(payload);
+          });
         }
+        // }
       });
     }
     return;
@@ -265,12 +264,26 @@ const sendAcknowledgementForJoinTournament = async (io) => {
     console.log("Error in send acknowledge--->", err);
   }
 };
+
+const checkTournamentHasMinimumPlayers = async () => {
+  try {
+    // let query = {
+    //   // 'waitingArray.'
+    // };
+
+    const getAllTournaments = tournamentModel.findOne();
+  } catch (err) {
+    console.log("Error in checkTournamentHasMinimumPllayers tournament", err);
+  }
+};
+
 const gameService = {
   getGameById,
   joinRoomByUserId,
   checkIfUserInGame,
   playerTentativeActionSelection,
   sendAcknowledgementForJoinTournament,
+  checkTournamentHasMinimumPlayers,
 };
 
 export default gameService;

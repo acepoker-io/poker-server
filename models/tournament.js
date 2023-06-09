@@ -25,6 +25,8 @@ const tournamentSchema = new Schema(
     tournamentType: { type: String, default: "Multi-Table" },
     winnerAmount: { type: Number, default: 0 },
     waitingArray: { type: Array, default: [] },
+    minimumPlayers: { type: Number, default: 0 },
+    waitingArrayLength: { type: Number, default: 0 },
     // prizeType:{ type: String, required: true },
     // prizeDistribution:{ type: String, required: true },
   },
