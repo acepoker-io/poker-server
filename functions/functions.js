@@ -7284,6 +7284,7 @@ export const JoinTournament = async (data, io, socket) => {
       },
       {
         waitingArray: waitingArray,
+        waitingArrayLength: waitingArray.length,
       },
       { new: true }
     );

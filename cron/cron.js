@@ -6,10 +6,13 @@ import { CronJob } from "cron";
 import { ISO_8601 } from "moment/moment";
 import { activateTournament } from "../functions/functions";
 import gameService from "../service/game.service";
-const returnCron = async(io) => {
+const returnCron = async (io) => {
+  console.log("cron executed");
   const job1 = new CronJob("*    *    *    *    *", async () => {
-    await gameService.sendAcknowledgementForJoinTournament(io)
-    await activateTournament(io)
+    console.log("cron executed");
+    await gameService.checkTournamentHasMinimumPlayers();
+    await gameService.sendAcknowledgementForJoinTournament(io);
+    await activateTournament(io);
   });
   job1.start();
 };
