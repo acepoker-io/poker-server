@@ -6,11 +6,26 @@ import tournamentModel from "../models/tournament.js";
 import smsService from "./sms.service.js";
 import moment from "moment";
 import Notification from "../models/notificationModal.js";
+import { any } from "joi";
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
 const maxPlayer = 9;
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
+const months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 const getGameById = async (id) => {
   const game = await roomModel.findOne({ _id: converMongoId(id) }).lean();
@@ -267,14 +282,72 @@ const sendAcknowledgementForJoinTournament = async (io) => {
 
 const checkTournamentHasMinimumPlayers = async () => {
   try {
-    // let query = {
-    //   // 'waitingArray.'
-    // };
+    const getAllTournaments = await tournamentModel.findOne({
+      $and: [
+        {
+          $where: "this.waitingArrayLength === this.minimumPlayers",
+        },
+        { startTime: null },
+      ],
+    });
 
-    const getAllTournaments = tournamentModel.findOne();
+    if (getAllTournaments) {
+      const { waitingArray, _id, name, hoursToStart } = getAllTournaments;
+      let crrDate = new Date();
+      crrDate.setHours(crrDate.getHours() + hoursToStart);
+      let startDate = crrDate;
+      startDate = `${getDoubleDigit(startDate.getDate())}-${
+        months[startDate.getMonth()]
+      }-${startDate.getFullYear()} ${getDoubleDigit(
+        startDate.getHours()
+      )}:${getDoubleDigit(startDate.getMinutes())}`;
+
+      console.log("tourament start date ==>", startDate);
+
+      const notificationPromise = waitingArray
+        .filter((el) => el.id)
+        .map((el) => {
+          return Notification.create({
+            receiver: el.id,
+            message: `Tournament "${name}" will be start at ${startDate}`,
+          });
+        });
+
+      const tournament = [
+        tournamentModel.updateOne(
+          {
+            _id: _id,
+          },
+          {
+            startTime: startDate,
+          }
+        ),
+      ];
+
+      Promise.allSettled([...tournament, ...notificationPromise]);
+    }
   } catch (err) {
     console.log("Error in checkTournamentHasMinimumPllayers tournament", err);
   }
+};
+
+const checkPlayerLimitHasReached = async () => {
+  try {
+    const getAllTournaments = await tournamentModel.findOne({
+      $and: [
+        {
+          $where: "this.waitingArrayLength === this.minimumPlayers",
+        },
+        { startTime: null },
+      ],
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const getDoubleDigit = (digit) => {
+  return digit > 9 ? digit : `0${digit}`;
 };
 
 const gameService = {

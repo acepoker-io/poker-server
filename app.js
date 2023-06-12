@@ -29,6 +29,7 @@ import {
 } from "./service/transaction";
 import axios from "axios";
 import tournamentRoute from "./routes/tournamentRoutes";
+import Notification from "./models/notificationModal";
 
 let app = express();
 dotenv.config();
@@ -300,6 +301,36 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     }).select({ id: 1, username: 1 });
 
     return res.status(200).send({ data: allUsers });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ msg: "Internal server error" });
+  }
+});
+
+app.get("/user/getAllNotifications", auth(), async (req, res) => {
+  try {
+    const { _id } = req.user;
+    console.log("_id", _id);
+    const notifications = await Notification.find({
+      $and: [{ receiver: _id.toString() }, { seen: false }],
+    });
+    console.log(notifications);
+    return res.status(200).send(notifications);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ msg: "Internal server error" });
+  }
+});
+
+app.get("/user/notificationCount", auth(), async (req, res) => {
+  try {
+    const { _id } = req.user;
+    console.log("_id", _id);
+    const counts = await Notification.countDocuments({
+      $and: [{ receiver: _id.toString() }, { seen: false }],
+    });
+    console.log(counts);
+    return res.status(200).send({ counts });
   } catch (error) {
     console.log(error);
     return res.status(500).send({ msg: "Internal server error" });

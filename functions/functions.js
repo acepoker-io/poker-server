@@ -27,7 +27,7 @@ import {
 import { ethers } from "ethers";
 
 const gameRestartSeconds = 8000;
-const commisionPersentage = 0.00025;
+const commisionPersentage = 0.005;
 const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
