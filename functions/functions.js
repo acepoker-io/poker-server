@@ -3510,7 +3510,7 @@ export const doFold = async (roomData, playerid, io) => {
               }
             );
 
-            if (updatedRoom.allinPlayers.length) {
+            if (!updatedRoom.allinPlayers.length) {
               await winnerBeforeShowdown(
                 roomid,
                 playingPlayer[0].id,
@@ -3573,7 +3573,7 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-            if (updatedRoom.allinPlayers.length) {
+            if (!updatedRoom.allinPlayers.length) {
               await winnerBeforeShowdown(
                 roomid,
                 playingPlayer[0].id,
@@ -3635,7 +3635,7 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-            if (updatedRoom.allinPlayers.length) {
+            if (!updatedRoom.allinPlayers.length) {
               await winnerBeforeShowdown(
                 roomid,
                 playingPlayer[0].id,
@@ -3698,7 +3698,7 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-            if (updatedRoom.allinPlayers.length) {
+            if (!updatedRoom.allinPlayers.length) {
               await winnerBeforeShowdown(
                 roomid,
                 playingPlayer[0].id,
