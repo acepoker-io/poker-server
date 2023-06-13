@@ -313,7 +313,7 @@ app.get("/user/getAllNotifications", auth(), async (req, res) => {
     console.log("_id", _id);
     const notifications = await Notification.find({
       $and: [{ receiver: _id.toString() }, { seen: false }],
-    });
+    }).sort({ _id: -1 });
     console.log(notifications);
     return res.status(200).send(notifications);
   } catch (error) {

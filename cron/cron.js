@@ -11,6 +11,7 @@ const returnCron = async (io) => {
   const job1 = new CronJob("*    *    *    *    *", async () => {
     console.log("cron executed");
     await gameService.checkTournamentHasMinimumPlayers();
+    await gameService.checkPlayerLimitHasReached();
     await gameService.sendAcknowledgementForJoinTournament(io);
     await activateTournament(io);
   });

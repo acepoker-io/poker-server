@@ -282,65 +282,84 @@ const sendAcknowledgementForJoinTournament = async (io) => {
 
 const checkTournamentHasMinimumPlayers = async () => {
   try {
-    const getAllTournaments = await tournamentModel.findOne({
+    const allTournaments = await tournamentModel.findOne({
       $and: [
         {
-          $where: "this.waitingArrayLength === this.minimumPlayers",
+          $where: "this.waitingArrayLength >= this.minimumPlayers",
         },
         { startTime: null },
       ],
     });
-
-    if (getAllTournaments) {
-      const { waitingArray, _id, name, hoursToStart } = getAllTournaments;
-      let crrDate = new Date();
-      crrDate.setHours(crrDate.getHours() + hoursToStart);
-      let startDate = crrDate;
-      startDate = `${getDoubleDigit(startDate.getDate())}-${
-        months[startDate.getMonth()]
-      }-${startDate.getFullYear()} ${getDoubleDigit(
-        startDate.getHours()
-      )}:${getDoubleDigit(startDate.getMinutes())}`;
-
-      console.log("tourament start date ==>", startDate);
-
-      const notificationPromise = waitingArray
-        .filter((el) => el.id)
-        .map((el) => {
-          return Notification.create({
-            receiver: el.id,
-            message: `Tournament "${name}" will be start at ${startDate}`,
-          });
-        });
-
-      const tournament = [
-        tournamentModel.updateOne(
-          {
-            _id: _id,
-          },
-          {
-            startTime: startDate,
-          }
-        ),
-      ];
-
-      Promise.allSettled([...tournament, ...notificationPromise]);
+    console.log("allTournaments ==>", allTournaments);
+    if (allTournaments) {
+      sendNotificationsAndUpdateTournament(allTournaments);
     }
   } catch (err) {
     console.log("Error in checkTournamentHasMinimumPllayers tournament", err);
   }
 };
 
+const sendNotificationsAndUpdateTournament = async (allTournaments) => {
+  try {
+    const { waitingArray, _id, name, hoursToStart } = allTournaments;
+    let crrDate = new Date();
+    crrDate.setHours(crrDate.getHours() + hoursToStart);
+    let startDate = crrDate;
+    startDate = `${getDoubleDigit(startDate.getDate())}-${
+      months[startDate.getMonth()]
+    }-${startDate.getFullYear()} ${getDoubleDigit(
+      startDate.getHours()
+    )}:${getDoubleDigit(startDate.getMinutes())}`;
+
+    console.log("tourament start date ==>", startDate);
+
+    const notificationPromise = waitingArray
+      .filter((el) => el.id)
+      .map((el) => {
+        return Notification.create({
+          receiver: el.id,
+          message: `Tournament "${name}" will be start at`,
+          startDate: crrDate,
+        });
+      });
+
+    const tournament = [
+      tournamentModel.updateOne(
+        {
+          _id: _id,
+        },
+        {
+          startTime: startDate,
+        }
+      ),
+    ];
+
+    Promise.allSettled([...tournament, ...notificationPromise]);
+  } catch (err) {}
+};
+
 const checkPlayerLimitHasReached = async () => {
   try {
-    const getAllTournaments = await tournamentModel.findOne({
+    let startDate = new Date();
+    startDate = `${getDoubleDigit(startDate.getDate())}-${
+      months[startDate.getMonth()]
+    }-${startDate.getFullYear()} ${getDoubleDigit(
+      startDate.getHours()
+    )}:${getDoubleDigit(startDate.getMinutes())}`;
+    console.log("startDate ===>", startDate);
+    const allTournaments = await tournamentModel.findOne({
       $and: [
         {
-          $where: "this.waitingArrayLength === this.minimumPlayers",
+          $where: "this.waitingArrayLength >= this.minimumPlayers",
         },
-        { startTime: null },
+        { startTime: startDate },
+        { $where: "this.havePlayers !== this.waitingArrayLength" },
       ],
     });
+    // console.log("allTournaments ===>", allTournaments);
+    if (allTournaments) {
+      sendNotificationsAndUpdateTournament(allTournaments);
+    }
   } catch (error) {
     console.log(error);
   }
@@ -357,6 +376,7 @@ const gameService = {
   playerTentativeActionSelection,
   sendAcknowledgementForJoinTournament,
   checkTournamentHasMinimumPlayers,
+  checkPlayerLimitHasReached,
 };
 
 export default gameService;

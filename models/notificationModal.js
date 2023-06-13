@@ -6,6 +6,7 @@ const NotificationSchema = new mongoose.Schema(
     receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     message: { type: String },
     seen: { type: Boolean, default: false },
+    startDate: { type: Date },
     // url: { type: String },
   },
   { timestamps: true }
