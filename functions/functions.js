@@ -3491,7 +3491,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3508,12 +3510,15 @@ export const doFold = async (roomData, playerid, io) => {
               }
             );
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
+            if (!updatedRoom.allinPlayers.length) {
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+            }
+
             res = false;
           }
           return res;
@@ -3551,7 +3556,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3566,13 +3573,15 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
+            if (!updatedRoom.allinPlayers.length) {
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+            }
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
             res = false;
           }
           return res;
@@ -3609,7 +3618,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3624,13 +3635,15 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
+            if (!updatedRoom.allinPlayers.length) {
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+            }
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
             res = false;
           }
           return res;
@@ -3668,7 +3681,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3683,13 +3698,15 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
+            if (!updatedRoom.allinPlayers.length) {
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+            }
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
             res = false;
           }
           return res;
