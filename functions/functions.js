@@ -3431,6 +3431,11 @@ export const doLeaveTable = async (data, io, socket) => {
             msg: `${playerdata[0].name} has left the game`,
             userId: userid,
           });
+
+        const getAllRunningRoom = await roomModel
+          .find({})
+          .populate("players.userid");
+        io.emit("AllTables", { tables: getAllRunningRoom });
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
@@ -7086,6 +7091,9 @@ export const checkForGameTable = async (data, socket, io) => {
       socket.join(gameId);
       await userService.updateUserWallet(userId, user.wallet - sitInAmount);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
+      const allRooms = await roomModel.find({}).populate("players.userid");
+
+      io.emit("AllTables", { tables: allRooms });
       return;
     } else {
       socket.emit("tablefull", { message: "This table is full." });
