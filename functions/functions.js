@@ -32,6 +32,20 @@ const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
+const months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 const addUserInSocket = (io, socket, gameId, userId) => {
   try {
@@ -916,7 +930,7 @@ export const prefloptimer = async (roomid, io) => {
                 } else {
                   const isContinue = await doFold(
                     data,
-                    intervalPlayer[0].id,
+                    intervalPlayer[0]?.id,
                     io
                   );
                   io.in(data?._id?.toString()).emit("automaticFold", {
@@ -1199,7 +1213,7 @@ export const flopTimer = async (roomid, io) => {
                 } else {
                   const isContinue = await doFold(
                     data,
-                    intervalPlayer[0].id,
+                    intervalPlayer[0]?.id,
                     io
                   );
                   io.in(data?._id?.toString()).emit("automaticFold", {
@@ -1474,7 +1488,7 @@ export const turnTimer = async (roomid, io) => {
                 } else {
                   const isContinue = await doFold(
                     data,
-                    intervalPlayer[0].id,
+                    intervalPlayer[0]?.id,
                     io
                   );
                   io.in(data?._id?.toString()).emit("automaticFold", {
@@ -1756,7 +1770,7 @@ export const riverTimer = async (roomid, io) => {
                 } else {
                   const isContinue = await doFold(
                     data,
-                    intervalPlayer[0].id,
+                    intervalPlayer[0]?.id,
                     io
                   );
                   io.in(data?._id?.toString()).emit("automaticFold", {
@@ -3433,7 +3447,7 @@ export const doLeaveTable = async (data, io, socket) => {
           });
 
         const getAllRunningRoom = await roomModel
-          .find({})
+          .find({ tournament: null })
           .populate("players.userid");
         io.emit("AllTables", { tables: getAllRunningRoom });
       }
@@ -7091,7 +7105,9 @@ export const checkForGameTable = async (data, socket, io) => {
       socket.join(gameId);
       await userService.updateUserWallet(userId, user.wallet - sitInAmount);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
-      const allRooms = await roomModel.find({}).populate("players.userid");
+      const allRooms = await roomModel
+        .find({ tournament: null })
+        .populate("players.userid");
 
       io.emit("AllTables", { tables: allRooms });
       return;
@@ -7346,6 +7362,179 @@ export const JoinTournament = async (data, io, socket) => {
   }
 };
 
+export const activateTournament = async (io) => {
+  try {
+    console.log("Activate tournamnet executed");
+    // const date = new Date().toISOString().split("T")[0];
+    // const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
+    const crrDate = new Date();
+    let startDate = crrDate;
+    startDate = `${getDoubleDigit(startDate.getDate())}-${
+      months[startDate.getMonth()]
+    }-${startDate.getFullYear()} ${getDoubleDigit(
+      startDate.getHours()
+    )}:${getDoubleDigit(startDate.getMinutes())}`;
+
+    console.log("satrt date ==>", startDate);
+
+    const checkTournament = await tournamentModel.findOne({
+      startTime: startDate,
+      $where: "this.waitingArrayLength === this.havePlayers",
+      isStart: false,
+    });
+
+    console.log("Tournament to start ==>", checkTournament);
+    if (checkTournament) {
+      const {
+        rooms,
+        waitingArray,
+        levels: { smallBlind, bigBlind },
+        _id,
+        buyIn,
+      } = checkTournament;
+      let newRoom = await createNewRoom({
+        tournamentId: _id,
+        smallBlind,
+        bigBlind,
+      });
+      rooms.push(newRoom);
+
+      const updatedWaitingArray = [];
+
+      for await (let user of waitingArray) {
+        if (rooms[rooms.length - 1].players.length <= playerLimit) {
+          const updatedRoom = await addPlayerInRoom(
+            rooms[rooms.length - 1],
+            user,
+            buyIn
+          );
+          rooms[rooms.length - 1] = updatedRoom;
+        } else {
+          let newRoom = await createNewRoom({
+            tournamentId: _id,
+            smallBlind,
+            bigBlind,
+          });
+          rooms.push(newRoom);
+          const updatedRoom = await addPlayerInRoom(
+            rooms[rooms.length - 1],
+            user,
+            buyIn
+          );
+          rooms[rooms.length - 1] = updatedRoom;
+        }
+        updatedWaitingArray.push({
+          ...user,
+          roomId: rooms[rooms.length - 1]._id.toString(),
+        });
+      }
+      await tournamentModel.findOneAndUpdate(
+        { _id: _id },
+        {
+          rooms: rooms,
+          waitingArray: updatedWaitingArray,
+        },
+        { new: true }
+      );
+
+      const updatedTournaments = await tournamentModel.find({});
+
+      io.emit("updatedTournaments", { tournaments: updatedTournaments });
+    }
+
+    // .populate("rooms")
+    // .lean();
+    // if (checkTournament) {
+    //   //preflopround()
+    //   if (checkTournament?.isStart) {
+    //     return;
+    //   }
+    //   if (checkTournament?.rooms?.length > 0 && !checkTournament?.isStart) {
+    //     await tournamentModel.updateOne(
+    //       { _id: checkTournament?._id },
+    //       { isStart: true }
+    //     );
+    //     console.log("Tournament started");
+    //     blindTimer(checkTournament, io);
+    //     for (let room of checkTournament?.rooms) {
+    //       preflopround(room, io);
+    //     }
+    //   }
+    // }
+  } catch (error) {
+    console.log("activateTournament", error);
+  }
+};
+
+const addPlayerInRoom = async (room, user, buyIn) => {
+  try {
+    const { players, _id } = room;
+    const newPlayer = {
+      name: user.userName,
+      userid: _id,
+      id: _id,
+      // photoURI: avatar ? avatar : profile ? profile : img,
+      wallet: parseFloat(buyIn),
+      position: 0,
+      missedSmallBlind: false,
+      missedBigBlind: false,
+      forceBigBlind: false,
+      playing: true,
+      initialCoinBeforeStart: parseFloat(buyIn),
+      gameJoinedAt: new Date(),
+      hands: [],
+    };
+    players.push(newPlayer);
+    room.players = players;
+    const updatedRoom = roomModel.findOneAndUpdate(
+      { _id: _id },
+      {
+        players: players,
+      },
+      { new: true }
+    );
+    return updatedRoom;
+  } catch (error) {
+    console.log("error in add in player", error);
+  }
+};
+
+const createNewRoom = async ({ smallBlind, bigBlind, tournamentId, buyIn }) => {
+  try {
+    const payload = {
+      // players: [
+      //   {
+      //     name: username,
+      //     userid: _id,
+      //     id: _id,
+      //     // photoURI: avatar ? avatar : profile ? profile : img,
+      //     wallet: parseFloat(buyIn),
+      //     position: 0,
+      //     missedSmallBlind: false,
+      //     missedBigBlind: false,
+      //     forceBigBlind: false,
+      //     playing: true,
+      //     initialCoinBeforeStart: parseFloat(buyIn),
+      //     gameJoinedAt: new Date(),
+      //     hands: [],
+      //   },
+      // ],
+      tournament: tournamentId,
+      autoNextHand: true,
+      smallBlind: parseFloat(smallBlind.amount) || 100,
+      bigBlind: parseFloat(bigBlind.amount) || 200,
+      gameType: "poker-tournament",
+    };
+
+    const roomData = new roomModel(payload);
+    const savedroom = await roomData.save();
+    console.log("saved rooomm", savedroom);
+    return savedroom;
+  } catch (error) {
+    console.log("errorr in create new room in tournament", error);
+  }
+};
+
 const pushPlayerInRoom = async (
   checkTournament,
   userData,
@@ -7468,38 +7657,8 @@ const pushPlayerInRoom = async (
   }
 };
 
-export const activateTournament = async (io) => {
-  try {
-    const date = new Date().toISOString().split("T")[0];
-    const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
-    const checkTournament = await tournamentModel
-      .findOne({
-        startDate: date,
-        startTime: time,
-        tournamentType: { $ne: "sit&go" },
-      })
-      .populate("rooms")
-      .lean();
-    if (checkTournament) {
-      //preflopround()
-      if (checkTournament?.isStart) {
-        return;
-      }
-      if (checkTournament?.rooms?.length > 0 && !checkTournament?.isStart) {
-        await tournamentModel.updateOne(
-          { _id: checkTournament?._id },
-          { isStart: true }
-        );
-        console.log("Tournament started");
-        blindTimer(checkTournament, io);
-        for (let room of checkTournament?.rooms) {
-          preflopround(room, io);
-        }
-      }
-    }
-  } catch (error) {
-    console.log("activateTournament", error);
-  }
+const getDoubleDigit = (digit) => {
+  return digit > 9 ? digit : `0${digit}`;
 };
 
 export const blindTimer = async (data, io) => {

@@ -12,7 +12,8 @@ const returnCron = async (io) => {
     console.log("cron executed");
     await gameService.checkTournamentHasMinimumPlayers();
     await gameService.checkPlayerLimitHasReached();
-    await gameService.sendAcknowledgementForJoinTournament(io);
+    // await gameService.checkToStartTournament();
+    // await gameService.sendAcknowledgementForJoinTournament(io);
     await activateTournament(io);
   });
   job1.start();
