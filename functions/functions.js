@@ -3450,6 +3450,7 @@ export const doLeaveTable = async (data, io, socket) => {
           .find({ tournament: null })
           .populate("players.userid");
         io.emit("AllTables", { tables: getAllRunningRoom });
+        io.in(tableId.toString()).emit("updateRoom", updatedData);
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
