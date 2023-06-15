@@ -6875,7 +6875,7 @@ export const leaveApiCall = async (room, userId, io, socket) => {
     //   );
     // });
 
-    // console.log("transactions ====>", transactions);
+    console.log("transactions ====>", transactions);
 
     // const userTransactionProm = userTransactions
     //   .filter((el) => el.amount > 0)

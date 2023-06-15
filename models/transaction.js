@@ -21,6 +21,7 @@ const transactionSchema = new Schema(
         "commission",
         "updated by admin",
         "poker tournament",
+        "poker",
       ],
     },
     prevTicket: { type: Number },
