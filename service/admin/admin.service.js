@@ -246,11 +246,39 @@ const allTransaction = async (query) => {
   const skip = Number(query.skip);
   const limit = Number(query.limit);
   let filterObj = {};
-  if (query?.filter) {
-    filterObj = {
-      transactionType: query?.filter,
+  let searchObj = {};
+  let sortObj = {};
+  console.log("query ==>", query);
+
+  if (query?.searchKey) {
+    searchObj = {
+      $or: [
+        { username: { $regex: query.searchKey, $options: "i" } },
+        // { firstName: { $regex: query.searchKey, $options: "i" } },
+        // { lastName: { $regex: query.searchKey, $options: "i" } },
+        // { email: { $regex: query.searchKey, $options: "i" } },
+      ],
     };
+    const user = await User.find(searchObj);
+    console.log("user", user);
+    filterObj.userId = { $in: user.map((e) => e._id) };
+    // filterObj = searchObj;
   }
+
+  if (query?.filter) {
+    filterObj.transactionType = query?.filter;
+  }
+
+  if (query?.sort?.sortBy) {
+    sortObj[query?.sort?.sortBy] = parseInt(query?.sort?.sort);
+  } else {
+    sortObj = { _id: -1 };
+  }
+
+  filterObj.userId = { $exists: true };
+
+  console.log("sortObj: ==>", sortObj);
+
   const transaction = await transactionModel
     .find(filterObj)
     .populate({
@@ -266,10 +294,11 @@ const allTransaction = async (query) => {
         isBlock: 1,
       },
     })
-    .sort({ _id: -1 })
+    .sort(sortObj)
     .skip(skip)
     .limit(limit);
 
+  console.log("filterObj ====>", filterObj);
   const count = await transactionModel.countDocuments(filterObj);
   return { transaction, count };
 };
