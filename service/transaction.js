@@ -180,6 +180,7 @@ export const sendCommisionToSharableAddress = async (amount) => {
     return transferToWinner;
   } catch (error) {
     console.log("error in sendCommisionToSharableAddress ==>", error);
+    return null;
   }
 };
 
