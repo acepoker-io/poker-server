@@ -2339,6 +2339,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
         };
         let sitin = roomData?.sitin;
         let leavereq = roomData?.leavereq;
+        let actualPlayers = roomData?.players;
 
         each(
           playerData,
@@ -2376,9 +2377,20 @@ export const updateRoomForNewHand = async (roomid, io) => {
               }
 
               if (!el.playing) {
+                console.log("el user name ===>", el.username);
                 const havePlayer = sitin.filter(
                   (el) => el.toString() === uid.toString()
                 );
+                console.log("actualPlayers ===>", actualPlayers);
+                const isPlayerRejoined = actualPlayers.filter(
+                  (plyr) => uid.toString() === plyr._id.toString()
+                );
+                console.log(isPlayerRejoined);
+
+                if (isPlayerRejoined.length < 0) {
+                  el.playing = true;
+                }
+
                 if (havePlayer.length) {
                   el.playing = true;
                   sitin = sitin.filter(
@@ -3450,7 +3462,9 @@ export const doLeaveTable = async (data, io, socket) => {
           .find({ tournament: null })
           .populate("players.userid");
         io.emit("AllTables", { tables: getAllRunningRoom });
-        io.in(tableId.toString()).emit("updateRoom", updatedData);
+        if (!updatedData.isGameRunning) {
+          io.in(tableId.toString()).emit("updateRoom", updatedData);
+        }
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
@@ -5373,7 +5387,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     }, gameRestartSeconds);
 
     const transaction = await sendCommisionToSharableAddress(commision);
-    console.log("transaction ==>", transaction);
+    console.log(
+      "transaction called from winner before showdown ==>",
+      transaction
+    );
     await transactionModel.create({
       roomId: roomData._id,
       amount: commision,
