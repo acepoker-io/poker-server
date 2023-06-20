@@ -7086,15 +7086,35 @@ export const checkForGameTable = async (data, socket, io) => {
         },
         {
           "players.$.playing": true,
-        }
+        },
+        { new: true }
       );
+      console.log("gameUpdatedData ==>", gameUpdatedData, gameId);
       io.in(gameId).emit("updateGame", { game: gameUpdatedData });
       return;
     }
     if (game.players.length >= playerLimit) {
       return socket.emit("tablefull", { message: "This table is full." });
     }
-    if (!sitInAmount) {
+
+    // if (players.find((el) => el.userid?.toString() === userId.toString())) {
+    //   addUserInSocket(io, socket, gameId, userId);
+    //   socket.join(gameId);
+    //   const gameUpdatedData = await roomModel.findOneAndUpdate(
+    //     {
+    //       _id: convertMongoId(gameId),
+    //       "players.userid": convertMongoId(userId),
+    //     },
+    //     {
+    //       "players.$.playing": true,
+    //     }
+    //   );
+    //   console.log("gameUpdatedData ==>", gameUpdatedData);
+    //   io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+    //   return;
+    // }
+
+    if (!sitInAmount && !game.tournament) {
       return socket.emit("notInvitedPlayer", {
         message: "notInvited",
       });
@@ -7121,7 +7141,8 @@ export const checkForGameTable = async (data, socket, io) => {
     if (updatedRoom && Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
-      await userService.updateUserWallet(userId, user.wallet - sitInAmount);
+      // await userService.updateUserWallet(userId, user.wallet - sitInAmount);
+      console.log("updatedRoom ==>", updatedRoom);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       const allRooms = await roomModel
         .find({ tournament: null })
@@ -7446,7 +7467,7 @@ export const activateTournament = async (io) => {
           roomId: rooms[rooms.length - 1]._id.toString(),
         });
       }
-      await tournamentModel.findOneAndUpdate(
+      const updatedTournament = await tournamentModel.findOneAndUpdate(
         { _id: _id },
         {
           rooms: rooms,
@@ -7458,6 +7479,22 @@ export const activateTournament = async (io) => {
       const updatedTournaments = await tournamentModel.find({});
 
       io.emit("updatedTournaments", { tournaments: updatedTournaments });
+
+      console.log("updatedTournament ===>", updatedTournament);
+
+      const notifications = updatedTournament.waitingArray.map((el) => {
+        return Notification.create({
+          receiver: el.id,
+          message: `Tournament "${updatedTournament.name}" is going to start in 2 minutes.`,
+          startDate: null,
+        });
+      });
+      Promise.allSettled(notifications);
+
+      setTimeout(async () => {
+        console.log("tournament started");
+        await startTournamentTables(updatedTournament, io);
+      }, 2000);
     }
 
     // .populate("rooms")
@@ -7484,13 +7521,25 @@ export const activateTournament = async (io) => {
   }
 };
 
+const startTournamentTables = async (tournament, io) => {
+  try {
+    for await (let roomId of tournament.rooms) {
+      console.log("tournament room id ==>", roomId);
+      await blindTimer(tournament, io);
+      await preflopround(roomId, io);
+    }
+  } catch (error) {
+    console.log("error in start tournmament tables", error);
+  }
+};
+
 const addPlayerInRoom = async (room, user, buyIn) => {
   try {
     const { players, _id } = room;
     const newPlayer = {
-      name: user.userName,
-      userid: _id,
-      id: _id,
+      name: user?.userName,
+      userid: convertMongoId(user?.id),
+      id: convertMongoId(user?.id),
       // photoURI: avatar ? avatar : profile ? profile : img,
       wallet: parseFloat(buyIn),
       position: 0,
