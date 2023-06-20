@@ -4,7 +4,7 @@
 
 import { CronJob } from "cron";
 import { ISO_8601 } from "moment/moment";
-import { activateTournament } from "../functions/functions";
+import { Tournament, activateTournament } from "../functions/functions";
 import gameService from "../service/game.service";
 const returnCron = async (io) => {
   console.log("cron executed");

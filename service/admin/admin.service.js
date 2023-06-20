@@ -275,9 +275,10 @@ const allTransaction = async (query) => {
     sortObj = { _id: -1 };
   }
 
-  filterObj.userId = { $exists: true };
+  // filterObj.userId = { $exists: true };
 
   console.log("sortObj: ==>", sortObj);
+  console.log("filterObj: ==>", filterObj);
 
   const transaction = await transactionModel
     .find(filterObj)
