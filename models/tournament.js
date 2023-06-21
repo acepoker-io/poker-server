@@ -28,6 +28,7 @@ const tournamentSchema = new Schema(
     minimumPlayers: { type: Number, default: 0 },
     waitingArrayLength: { type: Number, default: 0 },
     hoursToStart: { type: Number, default: 0 },
+    round: { type: Number, default: 0 },
     // prizeType:{ type: String, required: true },
     // prizeDistribution:{ type: String, required: true },
   },
