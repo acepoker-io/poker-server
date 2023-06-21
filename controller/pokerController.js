@@ -268,7 +268,21 @@ export const refillWallet = async (data, io, socket) => {
       let room = await roomModel.findOne({
         _id: tableId,
       });
-
+      const user = await User.findOne({
+        _id: userid,
+      });
+      if (parseInt(amount) < 100) {
+        return socket.emit("notEnoughAmount", {
+          message: "Minimum amount to enter is 100.",
+          code: 400,
+        });
+      }
+      if (parseFloat(amount) > user?.wallet) {
+        return socket.emit("notEnoughAmount", {
+          message: "You don't have enough token.",
+          code: 400,
+        });
+      }
       if (room != null) {
         const playerExist = room.players.filter(
           (el) =>
