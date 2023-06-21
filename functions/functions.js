@@ -7141,7 +7141,7 @@ export const checkForGameTable = async (data, socket, io) => {
     if (updatedRoom && Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
-      // await userService.updateUserWallet(userId, user.wallet - sitInAmount);
+      await userService.updateUserWallet(userId, user.wallet - sitInAmount);
       console.log("updatedRoom ==>", updatedRoom);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       const allRooms = await roomModel
@@ -7414,7 +7414,7 @@ export const activateTournament = async (io) => {
       startDate.getHours()
     )}:${getDoubleDigit(startDate.getMinutes())}`;
 
-    console.log("satrt date ==>", startDate);
+    // console.log("satrt date ==>", startDate);
 
     const checkTournament = await tournamentModel.findOne({
       startTime: startDate,
@@ -7472,6 +7472,8 @@ export const activateTournament = async (io) => {
         {
           rooms: rooms,
           waitingArray: updatedWaitingArray,
+          isStart: true,
+          round: { $inc: 1 },
         },
         { new: true }
       );
@@ -7494,7 +7496,7 @@ export const activateTournament = async (io) => {
       setTimeout(async () => {
         console.log("tournament started");
         await startTournamentTables(updatedTournament, io);
-      }, 2000);
+      }, 120000);
     }
 
     // .populate("rooms")
