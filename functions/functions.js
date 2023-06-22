@@ -2383,7 +2383,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 );
                 console.log("actualPlayers ===>", actualPlayers);
                 const isPlayerRejoined = actualPlayers.filter(
-                  (plyr) => uid.toString() === plyr._id.toString()
+                  (plyr) => uid.toString() === plyr.id.toString()
                 );
                 console.log(isPlayerRejoined);
 
@@ -5183,7 +5183,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         break;
     }
     playerData.forEach((e) => {
-      winnerAmount += e.pot;
+      winnerAmount += e.prevPot;
       let p = {
         cards: e.cards,
         id: e.id,
@@ -5224,7 +5224,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let winnerPlayerData = showDownPlayers.filter(
       (el) => el.id.toString() === playerid.toString()
     );
-
+    console.log("winner player ==>", winnerPlayerData[0]);
     winnerPlayerData[0].wallet += winnerAmount;
     let totalPlayerTablePot = winnerPlayerData[0].prevPot;
 
@@ -5232,7 +5232,12 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 
     if (!roomData.pot && (!roomData.sidePots || !roomData.sidePots?.length)) {
     }
-    console.log("winning amount ==>", winningAmount);
+    console.log(
+      "winning amount ==>",
+      winningAmount,
+      winnerAmount,
+      totalPlayerTablePot
+    );
     const winnerPlayer = [
       {
         id: winnerPlayerData[0].id,
@@ -5321,10 +5326,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         let updatedRoomPlayers = await roomModel.findOne({
           _id: roomid,
         });
-        console.log(
-          "I am here--- for check re arrange table",
-          updatedRoomPlayers
-        );
+        // console.log(
+        //   "I am here--- for check re arrange table",
+        //   updatedRoomPlayers
+        // );
         console.log("auto hand 1--->");
         if (!updatedRoom.pause) {
           console.log("auto hand 2--->");
@@ -6892,7 +6897,7 @@ export const leaveApiCall = async (room, userId, io, socket) => {
     //   );
     // });
 
-    console.log("transactions ====>", transactions);
+    // console.log("transactions ====>", transactions);
 
     // const userTransactionProm = userTransactions
     //   .filter((el) => el.amount > 0)
