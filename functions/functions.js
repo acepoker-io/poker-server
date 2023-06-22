@@ -5183,7 +5183,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         break;
     }
     playerData.forEach((e) => {
-      winnerAmount += e.pot;
+      winnerAmount += e.prevPot;
       let p = {
         cards: e.cards,
         id: e.id,
@@ -5224,7 +5224,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let winnerPlayerData = showDownPlayers.filter(
       (el) => el.id.toString() === playerid.toString()
     );
-
+    console.log("winner player ==>", winnerPlayerData[0]);
     winnerPlayerData[0].wallet += winnerAmount;
     let totalPlayerTablePot = winnerPlayerData[0].prevPot;
 
@@ -5232,7 +5232,12 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 
     if (!roomData.pot && (!roomData.sidePots || !roomData.sidePots?.length)) {
     }
-    console.log("winning amount ==>", winningAmount);
+    console.log(
+      "winning amount ==>",
+      winningAmount,
+      winnerAmount,
+      totalPlayerTablePot
+    );
     const winnerPlayer = [
       {
         id: winnerPlayerData[0].id,
