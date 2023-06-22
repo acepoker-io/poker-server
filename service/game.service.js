@@ -288,11 +288,12 @@ const checkTournamentHasMinimumPlayers = async () => {
           $where: "this.waitingArrayLength >= this.minimumPlayers",
         },
         { startTime: null },
+        { isStart: false },
       ],
     });
     console.log("allTournaments ==>", allTournaments);
     if (allTournaments) {
-      sendNotificationsAndUpdateTournament(allTournaments);
+      await sendNotificationsAndUpdateTournament(allTournaments);
     }
   } catch (err) {
     console.log("Error in checkTournamentHasMinimumPllayers tournament", err);
@@ -301,6 +302,8 @@ const checkTournamentHasMinimumPlayers = async () => {
 
 const sendNotificationsAndUpdateTournament = async (allTournaments) => {
   try {
+    console.log("sendNotificationsAndUpdateTournament executed ==>");
+
     const { waitingArray, _id, name, hoursToStart } = allTournaments;
     let crrDate = new Date();
     crrDate.setHours(crrDate.getHours() + hoursToStart);
@@ -335,7 +338,9 @@ const sendNotificationsAndUpdateTournament = async (allTournaments) => {
     ];
 
     Promise.allSettled([...tournament, ...notificationPromise]);
-  } catch (err) {}
+  } catch (err) {
+    console.log("error in sendNotificationsAndUpdateTournament", err);
+  }
 };
 
 const checkPlayerLimitHasReached = async () => {
@@ -354,9 +359,10 @@ const checkPlayerLimitHasReached = async () => {
         },
         { startTime: startDate },
         { $where: "this.havePlayers !== this.waitingArrayLength" },
+        { isStart: false },
       ],
     });
-    // console.log("allTournaments ===>", allTournaments);
+    console.log("allTournamentssfdasdvsdvs ===>", allTournaments);
     if (allTournaments) {
       sendNotificationsAndUpdateTournament(allTournaments);
     }

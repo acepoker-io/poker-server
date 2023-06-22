@@ -2173,7 +2173,7 @@ export const showdown = async (roomid, io) => {
     setTimeout(async () => {
       if (upRoom.tournament) {
         await elemination(upRoom, io);
-        await reArrangeTables(upRoom.tournament, io, upRoom._id);
+        // await reArrangeTables(upRoom.tournament, io, upRoom._id);
       } else {
         await updateRoomForNewHand(roomid, io);
         let updatedRoomPlayers = await roomModel.findOne({
@@ -2514,6 +2514,7 @@ export const elemination = async (roomData, io) => {
     const smallBlindAmt = roomData.smallBlind;
     let players = roomData.players;
     console.log("players =>", players, showDown);
+    const crrElemination = [];
     showDown.forEach((el) => {
       if (parseFloat(el.wallet) > 0) {
         newHandPlayer.push({
@@ -2534,6 +2535,7 @@ export const elemination = async (roomData, io) => {
         players = players.filter(
           (p) => p.userid.toString() !== el.id.toString()
         );
+        crrElemination.push(el.id.toString());
         noOfElemination++;
         eleminated_players.push({
           userid: el.id,
@@ -2552,78 +2554,108 @@ export const elemination = async (roomData, io) => {
 
     // console.log("eleminated_players", eleminated_players);
     // console.log("newHandPlayer", newHandPlayer);
-    const upRoom = await roomModel
-      .findOneAndUpdate(
-        {
-          _id: roomData._id,
-        },
-        {
-          players,
-          showdown: newHandPlayer,
-          eleminated: eleminated_players?.filter(
-            (item, index) => eleminated_players?.indexOf(item) === index
-          ),
-          preflopround: [],
-          flopround: [],
-          turnround: [],
-          riverround: [],
-          pot: 0,
-          communityCard: [],
-          gamestart: roomData.autoNextHand,
-          isGameRunning: false,
-          smallBlind: smallBlindAmt,
-          bigBlind: bigBlindAmt,
-          smallBlindPosition: roomData.smallBlindPosition,
-          bigBlindPosition: roomData.bigBlindPosition,
-          dealerPosition: roomData.dealerPosition,
-          raisePlayerPosition: null,
-          raiseAmount: 0,
-          timerPlayer: null,
-          lastAction: null,
-          winnerPlayer: [],
-          sidePots: [],
-          isShowdown: false,
-          isCircleCompleted: false,
-          allinPlayers: [],
-          tournament: roomData.tournament,
-          eliminationCount: eleminated_players?.length,
-          autoNextHand: true,
-        },
-        {
-          new: true,
-        }
-      )
-      .populate("tournament");
-    console.log("remainging player in showdown after game finish", upRoom);
-    if (
-      eleminated_players.length > 0 &&
-      upRoom.tournament.havePlayers > 0 &&
-      roomData?.eliminationCount !== upRoom?.eliminationCount
-    ) {
-      const availablePlayerCount =
-        parseInt(upRoom.tournament.havePlayers) -
-        parseInt(upRoom?.eliminationCount);
-      let eleminatedPlayers = [...upRoom.tournament.eleminatedPlayers].concat(
-        eleminated_players.sort(
-          (a, b) => a.chipsBeforeHandStart - b.chipsBeforeHandStart
+    if (newHandPlayer.length > 1) {
+      const upRoom = await roomModel
+        .findOneAndUpdate(
+          {
+            _id: roomData._id,
+          },
+          {
+            players,
+            showdown: newHandPlayer,
+            eleminated: eleminated_players?.filter(
+              (item, index) => eleminated_players?.indexOf(item) === index
+            ),
+            preflopround: [],
+            flopround: [],
+            turnround: [],
+            riverround: [],
+            pot: 0,
+            communityCard: [],
+            gamestart: roomData.autoNextHand,
+            isGameRunning: false,
+            smallBlind: smallBlindAmt,
+            bigBlind: bigBlindAmt,
+            smallBlindPosition: roomData.smallBlindPosition,
+            bigBlindPosition: roomData.bigBlindPosition,
+            dealerPosition: roomData.dealerPosition,
+            raisePlayerPosition: null,
+            raiseAmount: 0,
+            timerPlayer: null,
+            lastAction: null,
+            winnerPlayer: [],
+            sidePots: [],
+            isShowdown: false,
+            isCircleCompleted: false,
+            allinPlayers: [],
+            tournament: roomData.tournament,
+            eliminationCount: eleminated_players?.length,
+            autoNextHand: true,
+          },
+          {
+            new: true,
+          }
         )
+        .populate("tournament");
+      console.log("remainging player in showdown after game finish", upRoom);
+    } else {
+      const tournament = await tournamentModel.findOne({
+        _id: roomData.tournament,
+      });
+      console.log("tournament ====>", tournament);
+      const { waitingArray } = tournament;
+      let updatedWaitingArray = waitingArray.filter(
+        (el) => !crrElemination.includes(el.id)
       );
-      console.log("ele", eleminatedPlayers.length);
-
-      // if (availablePlayerCount <= upRoom.tournament.winTotalPlayer) {
-      //   await calculateTournamentPrize(
-      //     upRoom.tournament._id,
-      //     upRoom.eleminated
-      //   );
-      // }
-      await tournamentModel.updateOne(
-        { _id: upRoom.tournament._id },
+      updatedWaitingArray = [
+        ...waitingArray,
         {
-          havePlayers: parseInt(availablePlayerCount),
-          eleminatedPlayers,
+          id: newHandPlayer[0].id.toString(),
+          userName: newHandPlayer[0].name,
+          round: 2,
+        },
+      ];
+      await roomModel.deleteOne({ _id: roomData._id || roomData.id });
+      await tournamentModel.updateOne(
+        {
+          _id: tournament._id,
+        },
+        {
+          waitingArray: updatedWaitingArray,
+          $inc: { waitingArrayLength: 1 },
         }
       );
     }
+
+    // if (
+    //   eleminated_players.length > 0 &&
+    //   upRoom.tournament.havePlayers > 0 &&
+    //   roomData?.eliminationCount !== upRoom?.eliminationCount
+    // ) {
+    //   const availablePlayerCount =
+    //     parseInt(upRoom.tournament.havePlayers) -
+    //     parseInt(upRoom?.eliminationCount);
+    //   let eleminatedPlayers = [...upRoom.tournament.eleminatedPlayers].concat(
+    //     eleminated_players.sort(
+    //       (a, b) => a.chipsBeforeHandStart - b.chipsBeforeHandStart
+    //     )
+    //   );
+    //   console.log("ele", eleminatedPlayers.length);
+
+    //   // if (availablePlayerCount <= upRoom.tournament.winTotalPlayer) {
+    //   //   await calculateTournamentPrize(
+    //   //     upRoom.tournament._id,
+    //   //     upRoom.eleminated
+    //   //   );
+    //   // }
+    //   await tournamentModel.updateOne(
+    //     { _id: upRoom.tournament._id },
+    //     {
+    //       havePlayers: parseInt(availablePlayerCount),
+    //       eleminatedPlayers,
+    //     }
+    //   );
+    // }
     io.in(upRoom._id.toString()).emit("eliminatedPlayer", {
       eliminated: upRoom.eleminated,
       tournamentId: upRoom.tournament._id,
@@ -7416,87 +7448,90 @@ export const activateTournament = async (io) => {
 
     // console.log("satrt date ==>", startDate);
 
-    const checkTournament = await tournamentModel.findOne({
+    const checkTournaments = await tournamentModel.find({
       startTime: startDate,
       $where: "this.waitingArrayLength === this.havePlayers",
       isStart: false,
     });
 
-    console.log("Tournament to start ==>", checkTournament);
-    if (checkTournament) {
-      const {
-        rooms,
-        waitingArray,
-        levels: { smallBlind, bigBlind },
-        _id,
-        buyIn,
-      } = checkTournament;
-      let newRoom = await createNewRoom({
-        tournamentId: _id,
-        smallBlind,
-        bigBlind,
-      });
-      rooms.push(newRoom);
+    for await (const checkTournament of checkTournaments) {
+      console.log("Tournament to start ==>", checkTournament);
+      if (checkTournament) {
+        const {
+          rooms,
+          waitingArray,
+          levels: { smallBlind, bigBlind },
+          _id,
+          buyIn,
+        } = checkTournament;
+        let newRoom = await createNewRoom({
+          tournamentId: _id,
+          smallBlind,
+          bigBlind,
+        });
+        rooms.push(newRoom);
 
-      const updatedWaitingArray = [];
+        const updatedWaitingArray = [];
 
-      for await (let user of waitingArray) {
-        if (rooms[rooms.length - 1].players.length <= playerLimit) {
-          const updatedRoom = await addPlayerInRoom(
-            rooms[rooms.length - 1],
-            user,
-            buyIn
-          );
-          rooms[rooms.length - 1] = updatedRoom;
-        } else {
-          let newRoom = await createNewRoom({
-            tournamentId: _id,
-            smallBlind,
-            bigBlind,
+        for await (let user of waitingArray) {
+          if (rooms[rooms.length - 1].players.length <= playerLimit) {
+            const updatedRoom = await addPlayerInRoom(
+              rooms[rooms.length - 1],
+              user,
+              buyIn
+            );
+            rooms[rooms.length - 1] = updatedRoom;
+          } else {
+            let newRoom = await createNewRoom({
+              tournamentId: _id,
+              smallBlind,
+              bigBlind,
+            });
+            rooms.push(newRoom);
+            const updatedRoom = await addPlayerInRoom(
+              rooms[rooms.length - 1],
+              user,
+              buyIn
+            );
+            rooms[rooms.length - 1] = updatedRoom;
+          }
+          updatedWaitingArray.push({
+            ...user,
+            roomId: rooms[rooms.length - 1]._id.toString(),
           });
-          rooms.push(newRoom);
-          const updatedRoom = await addPlayerInRoom(
-            rooms[rooms.length - 1],
-            user,
-            buyIn
-          );
-          rooms[rooms.length - 1] = updatedRoom;
         }
-        updatedWaitingArray.push({
-          ...user,
-          roomId: rooms[rooms.length - 1]._id.toString(),
+        const updatedTournament = await tournamentModel.findOneAndUpdate(
+          { _id: _id },
+          {
+            rooms: rooms,
+            waitingArray: updatedWaitingArray,
+            isStart: true,
+            $inc: { round: 1 },
+            waitingArrayLength: 0,
+          },
+          { new: true }
+        );
+
+        const updatedTournaments = await tournamentModel.find({});
+
+        io.emit("updatedTournaments", { tournaments: updatedTournaments });
+
+        console.log("updatedTournament ===>", updatedTournament);
+
+        const notifications = updatedTournament.waitingArray.map((el) => {
+          return Notification.create({
+            receiver: el.id,
+            message: `Tournament "${updatedTournament.name}" is going to start in 2 minutes.`,
+            startDate: null,
+          });
         });
+        Promise.allSettled(notifications);
+
+        setTimeout(async () => {
+          console.log("tournament started");
+          await startTournamentTables(updatedTournament, io);
+        }, 120000);
       }
-      const updatedTournament = await tournamentModel.findOneAndUpdate(
-        { _id: _id },
-        {
-          rooms: rooms,
-          waitingArray: updatedWaitingArray,
-          isStart: true,
-          round: { $inc: 1 },
-        },
-        { new: true }
-      );
-
-      const updatedTournaments = await tournamentModel.find({});
-
-      io.emit("updatedTournaments", { tournaments: updatedTournaments });
-
-      console.log("updatedTournament ===>", updatedTournament);
-
-      const notifications = updatedTournament.waitingArray.map((el) => {
-        return Notification.create({
-          receiver: el.id,
-          message: `Tournament "${updatedTournament.name}" is going to start in 2 minutes.`,
-          startDate: null,
-        });
-      });
-      Promise.allSettled(notifications);
-
-      setTimeout(async () => {
-        console.log("tournament started");
-        await startTournamentTables(updatedTournament, io);
-      }, 120000);
     }
 
     // .populate("rooms")
