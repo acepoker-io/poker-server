@@ -2383,7 +2383,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 );
                 console.log("actualPlayers ===>", actualPlayers);
                 const isPlayerRejoined = actualPlayers.filter(
-                  (plyr) => uid.toString() === plyr._id.toString()
+                  (plyr) => uid.toString() === plyr.id.toString()
                 );
                 console.log(isPlayerRejoined);
 
@@ -5326,10 +5326,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         let updatedRoomPlayers = await roomModel.findOne({
           _id: roomid,
         });
-        console.log(
-          "I am here--- for check re arrange table",
-          updatedRoomPlayers
-        );
+        // console.log(
+        //   "I am here--- for check re arrange table",
+        //   updatedRoomPlayers
+        // );
         console.log("auto hand 1--->");
         if (!updatedRoom.pause) {
           console.log("auto hand 2--->");
@@ -6897,7 +6897,7 @@ export const leaveApiCall = async (room, userId, io, socket) => {
     //   );
     // });
 
-    console.log("transactions ====>", transactions);
+    // console.log("transactions ====>", transactions);
 
     // const userTransactionProm = userTransactions
     //   .filter((el) => el.amount > 0)
