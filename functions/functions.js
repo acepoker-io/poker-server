@@ -2128,16 +2128,18 @@ export const showdown = async (roomid, io) => {
 
     let totalCommision = 0;
 
-    if (upRoomData?.pot) {
-      totalCommision += upRoomData?.pot * commisionPersentage;
-      upRoomData.pot -= totalCommision;
-    } else {
-      upRoomData.sidePots = upRoomData?.sidePots?.map((el) => {
-        let crrCommission = el?.pot * commisionPersentage;
-        el.pot -= crrCommission;
-        totalCommision += crrCommission;
-        return el;
-      });
+    if (!upRoomData.tournament) {
+      if (upRoomData?.pot) {
+        totalCommision += upRoomData?.pot * commisionPersentage;
+        upRoomData.pot -= totalCommision;
+      } else {
+        upRoomData.sidePots = upRoomData?.sidePots?.map((el) => {
+          let crrCommission = el?.pot * commisionPersentage;
+          el.pot -= crrCommission;
+          totalCommision += crrCommission;
+          return el;
+        });
+      }
     }
 
     upRoomData.winnerPlayer = winnerPlayers;
@@ -2251,14 +2253,16 @@ export const showdown = async (roomid, io) => {
       }
     }, gameRestartSeconds);
 
-    const transaction = await sendCommisionToSharableAddress(totalCommision);
-    console.log("transaction ==>", transaction);
+    if (!roomData.tournament) {
+      const transaction = await sendCommisionToSharableAddress(totalCommision);
+      console.log("transaction ==>", transaction);
 
-    await transactionModel.create({
-      roomId: upRoomData._id,
-      amount: totalCommision,
-      transactionType: "commission",
-    });
+      await transactionModel.create({
+        roomId: upRoomData._id,
+        amount: totalCommision,
+        transactionType: "commission",
+      });
+    }
   } catch (error) {
     console.log("error in showdown =>", error);
   }
@@ -2603,7 +2607,7 @@ export const elemination = async (roomData, io) => {
         _id: roomData.tournament,
       });
       console.log("tournament ====>", tournament);
-      const { waitingArray } = tournament;
+      const { waitingArray, rooms } = tournament;
       let updatedWaitingArray = waitingArray.filter(
         (el) => !crrElemination.includes(el.id)
       );
@@ -2616,15 +2620,26 @@ export const elemination = async (roomData, io) => {
         },
       ];
       await roomModel.deleteOne({ _id: roomData._id || roomData.id });
-      await tournamentModel.updateOne(
+      const filteredRooms = rooms.filter((el) => {
+        el.toString() !== roomData._id.toString();
+      });
+
+      const updatedTournament = await tournamentModel.findOneAndUpdate(
         {
           _id: tournament._id,
         },
         {
           waitingArray: updatedWaitingArray,
           $inc: { waitingArrayLength: 1 },
+          rooms: filteredRooms,
+        },
+        {
+          new: true,
         }
       );
+      if (!filteredRooms.length) {
+        await reScheduleAnotherRound(updatedTournament);
+      }
     }
 
     // if (
@@ -2662,6 +2677,53 @@ export const elemination = async (roomData, io) => {
     });
   } catch (error) {
     console.log("error in eleminite function =>", error);
+  }
+};
+
+const reScheduleAnotherRound = async (tournament) => {
+  try {
+    if (tournament.waitingArray.length === 1) {
+      await finishTournamentAndGivePrizes(tournament);
+      return true;
+    }
+
+    await tournamentModel.updateOne({
+      _id: tournament._id,
+    });
+  } catch (error) {
+    console.log("error in recheduling tournament", error);
+  }
+};
+
+const finishTournamentAndGivePrizes = async (tournament) => {
+  try {
+    const lastPlayer = tournament.waitingArray[0];
+    const updatedPlayer = await userModel.findOneAndUpdate(
+      {
+        _id: lastPlayer.id,
+      },
+      {
+        $inc: {
+          wallet: tournament.winnerAmount,
+        },
+      },
+      { new: true }
+    );
+    await transactionModel.create({
+      userId: updatedPlayer._id,
+      roomId: null,
+      amount: tournament.winnerAmount,
+      prevWallet: updatedPlayer.wallet - tournament.winnerAmount,
+      updatedWallet: updatedPlayer.wallet,
+      tournamentId: tournament._id,
+      transactionType: "poker tournament",
+    });
+    await Notification.create({
+      receiver: updatedPlayer._id,
+      message: `Congratulations you have won the tournament "${tournament.name}"`,
+    });
+  } catch (err) {
+    console.log("error in finishTournamentAndGivePrizes", err);
   }
 };
 
@@ -5247,11 +5309,13 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     });
 
     console.log("roomData.pot", roomData.pot, roomData.sidePots, winnerAmount);
-    let commision = parseFloat(winnerAmount) * commisionPersentage;
-    console.log("commission", commision);
-    roomData.pot = roomData.pot - commision;
+    if (!roomData.tournament) {
+      let commision = parseFloat(winnerAmount) * commisionPersentage;
+      console.log("commission", commision);
+      roomData.pot = roomData.pot - commision;
 
-    winnerAmount -= commision;
+      winnerAmount -= commision;
+    }
 
     let winnerPlayerData = showDownPlayers.filter(
       (el) => el.id.toString() === playerid.toString()
@@ -5418,16 +5482,18 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       }
     }, gameRestartSeconds);
 
-    const transaction = await sendCommisionToSharableAddress(commision);
-    console.log(
-      "transaction called from winner before showdown ==>",
-      transaction
-    );
-    await transactionModel.create({
-      roomId: roomData._id,
-      amount: commision,
-      transactionType: "commission",
-    });
+    if (!roomData.tournament) {
+      const transaction = await sendCommisionToSharableAddress(commision);
+      console.log(
+        "transaction called from winner before showdown ==>",
+        transaction
+      );
+      await transactionModel.create({
+        roomId: roomData._id,
+        amount: commision,
+        transactionType: "commission",
+      });
+    }
   } catch (error) {
     console.log("error in winnerBeforeShowdwon", error);
   }
