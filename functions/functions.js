@@ -2363,6 +2363,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               let haveBuyin = buyin.filter(
                 (e) => e.userid.toString() === uid.toString() && !e.redeem
               );
+              console.log("Have buyin playerssssss ==>", haveBuyin);
               if (haveBuyin.length) {
                 haveBuyin.forEach((x) => {
                   buyinchips += parseInt(x.wallet);
@@ -5309,8 +5310,9 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     });
 
     console.log("roomData.pot", roomData.pot, roomData.sidePots, winnerAmount);
+    let commision = 0;
     if (!roomData.tournament) {
-      let commision = parseFloat(winnerAmount) * commisionPersentage;
+      commision = parseFloat(winnerAmount) * commisionPersentage;
       console.log("commission", commision);
       roomData.pot = roomData.pot - commision;
 

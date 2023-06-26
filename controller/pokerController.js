@@ -327,14 +327,27 @@ export const refillWallet = async (data, io, socket) => {
           }
         }
         if (playerExist?.length && room.isGameRunning) {
-          let buyinrequest = room.buyinrequest;
+          let buyinrequest = room.buyin;
+
           let buyin = {
             userid: userid,
             name: username,
             wallet: amount,
             redeem: 0,
           };
+          // let alreadyReqstd = false;
+          // buyinrequest = buyinrequest.map((el) => {
+          //   if (el.userid === userid) {
+          //     el.wallet += amount;
+          //     alreadyReqstd = true;
+          //   }
+          //   return el;
+          // });
+
+          // console.log("Buy in request ====> ", buyinrequest);
+          // if (!alreadyReqstd) {
           buyinrequest.push(buyin);
+          // }
 
           await roomModel.findByIdAndUpdate(room._id, {
             buyin: buyinrequest,
@@ -352,6 +365,7 @@ export const refillWallet = async (data, io, socket) => {
     }
   });
 };
+
 export const checkVerifyPrivateTable = async (req, res) => {
   try {
     const { tableId, password } = req.body;
