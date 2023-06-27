@@ -310,11 +310,11 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
 app.get("/user/getAllNotifications", auth(), async (req, res) => {
   try {
     const { _id } = req.user;
-    console.log("_id", _id);
+    // console.log("_id", _id);
     const notifications = await Notification.find({
       $and: [{ receiver: _id.toString() }],
     }).sort({ _id: -1 });
-    console.log(notifications);
+    // console.log(notifications);
     return res.status(200).send(notifications);
   } catch (error) {
     console.log(error);
@@ -325,11 +325,11 @@ app.get("/user/getAllNotifications", auth(), async (req, res) => {
 app.get("/user/notificationCount", auth(), async (req, res) => {
   try {
     const { _id } = req.user;
-    console.log("_id", _id);
+    // console.log("_id", _id);
     const counts = await Notification.countDocuments({
       $and: [{ receiver: _id.toString() }, { seen: false }],
     });
-    console.log(counts);
+    // console.log(counts);
     return res.status(200).send({ counts });
   } catch (error) {
     console.log(error);
@@ -340,14 +340,14 @@ app.get("/user/notificationCount", auth(), async (req, res) => {
 app.get("/user/seenAllNotifications", auth(), async (req, res) => {
   try {
     const { _id } = req.user;
-    console.log("_id", _id);
+    // console.log("_id", _id);
     const counts = await Notification.updateMany(
       {
         $and: [{ receiver: _id.toString() }, { seen: false }],
       },
       { seen: true }
     );
-    console.log(counts);
+    // console.log(counts);
     return res.status(200).send({ counts });
   } catch (error) {
     console.log(error);
