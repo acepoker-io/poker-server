@@ -28,7 +28,7 @@ import { ethers } from "ethers";
 
 const gameRestartSeconds = 8000;
 const commisionPersentage = 0.005;
-const playerLimit = 9;
+const playerLimit = 2;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -2621,6 +2621,11 @@ export const elemination = async (roomData, io) => {
           round: 2,
         },
       ];
+      console.log(
+        "updatedWaitingArray ===>",
+        updatedWaitingArray,
+        crrElemination
+      );
       await roomModel.deleteOne({ _id: roomData._id || roomData.id });
       const filteredRooms = rooms.filter((el) => {
         el.toString() !== roomData._id.toString();
@@ -2690,10 +2695,35 @@ const reScheduleAnotherRound = async (tournament) => {
       await finishTournamentAndGivePrizes(tournament);
       return true;
     }
+    let crrDate = new Date();
+    crrDate.setHours(crrDate.getHours() + tournament.hoursToStart);
+    let startDate = crrDate;
+    startDate = `${getDoubleDigit(startDate.getDate())}-${
+      months[startDate.getMonth()]
+    }-${startDate.getFullYear()} ${getDoubleDigit(
+      startDate.getHours()
+    )}:${getDoubleDigit(startDate.getMinutes())}`;
+    console.log("tournament round ==>", tournament.round);
+    const waitingArray = tournament.waitingArray.filter(
+      (el) => el.round && el.round === tournament.round + 1
+    );
 
-    await tournamentModel.updateOne({
-      _id: tournament._id,
-    });
+    console.log("waitingArray filtered", waitingArray, tournament.waitingArray);
+
+    await tournamentModel.updateOne(
+      {
+        _id: tournament._id,
+      },
+      {
+        startTime: startDate,
+        $inc: {
+          round: 1,
+        },
+        waitingArray: waitingArray,
+        isStart: false,
+        havePlayers: waitingArray.length,
+      }
+    );
   } catch (error) {
     console.log("error in recheduling tournament", error);
   }
@@ -7552,10 +7582,12 @@ export const activateTournament = async (io) => {
         });
         rooms.push(newRoom);
 
+        console.log("Roooms ====>", rooms);
+
         const updatedWaitingArray = [];
 
         for await (let user of waitingArray) {
-          if (rooms[rooms.length - 1].players.length <= playerLimit) {
+          if (rooms[rooms.length - 1].players.length < playerLimit) {
             const updatedRoom = await addPlayerInRoom(
               rooms[rooms.length - 1],
               user,
@@ -7768,7 +7800,6 @@ const pushPlayerInRoom = async (
             prizePool: checkTournament?.tournamentFee,
           },
         },
-
         { new: true }
       );
       if (
