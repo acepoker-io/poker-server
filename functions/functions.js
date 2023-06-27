@@ -2603,6 +2603,7 @@ export const elemination = async (roomData, io) => {
         )
         .populate("tournament");
       console.log("remainging player in showdown after game finish", upRoom);
+      preflopround(upRoom, io);
     } else {
       const tournament = await tournamentModel.findOne({
         _id: roomData.tournament,
@@ -2613,7 +2614,7 @@ export const elemination = async (roomData, io) => {
         (el) => !crrElemination.includes(el.id)
       );
       updatedWaitingArray = [
-        ...waitingArray,
+        ...updatedWaitingArray,
         {
           id: newHandPlayer[0].id.toString(),
           userName: newHandPlayer[0].name,
@@ -2639,6 +2640,7 @@ export const elemination = async (roomData, io) => {
         }
       );
       if (!filteredRooms.length) {
+        crrElemination.push(newHandPlayer[0].id.toString());
         await reScheduleAnotherRound(updatedTournament);
       }
     }
@@ -2672,9 +2674,10 @@ export const elemination = async (roomData, io) => {
     //     }
     //   );
     // }
-    io.in(upRoom._id.toString()).emit("eliminatedPlayer", {
-      eliminated: upRoom.eleminated,
-      tournamentId: upRoom.tournament._id,
+    // console.log("roomData._id elemination ==", roomData._id);
+    io.in(roomData._id.toString()).emit("eliminatedPlayer", {
+      eliminated: crrElemination,
+      tournamentId: roomData.tournament._id,
     });
   } catch (error) {
     console.log("error in eleminite function =>", error);
@@ -2683,7 +2686,7 @@ export const elemination = async (roomData, io) => {
 
 const reScheduleAnotherRound = async (tournament) => {
   try {
-    if (tournament.waitingArray.length === 1) {
+    if (tournament.waitingArray.length === 2) {
       await finishTournamentAndGivePrizes(tournament);
       return true;
     }
@@ -7299,9 +7302,14 @@ export const playerTentativeAction = async (data, socket, io) => {
         userId,
         playerAction
       );
-      const updatedGame = await gameService.getGameById(gameId);
+      // const updatedGame = await gameService.getGameById(gameId);
+      let updatedGame;
+      // setTimeout(async () => {
+      updatedGame = await gameService.getGameById(gameId);
+      io.in(gameId).emit("updateGame", { game: updatedGame });
+      // }, 200);
       // console.log("updatedGameupdatedGame", updatedGame);
-      // io.in(gameId).emit("updateGame", { game: updatedGame });
+      io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }
