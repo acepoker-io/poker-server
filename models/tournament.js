@@ -20,7 +20,7 @@ const tournamentSchema = new Schema(
     winPlayer: { type: Array },
     buyIn: { type: Number, required: true },
     isStart: { type: Boolean, default: false, index: true },
-    eleminatedPlayers: [],
+    eleminatedPlayers: { type: Array, default: [] },
     totalJoinPlayer: { type: Number, default: 0 },
     tournamentType: { type: String, default: "Multi-Table" },
     winnerAmount: { type: Number, default: 0 },
