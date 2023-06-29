@@ -2631,6 +2631,11 @@ export const elemination = async (roomData, io) => {
         el.toString() !== roomData._id.toString();
       });
 
+      const updatedEleminations = [
+        ...tournament.eleminatedPlayers,
+        ...crrElemination,
+      ];
+
       const updatedTournament = await tournamentModel.findOneAndUpdate(
         {
           _id: tournament._id,
@@ -2639,6 +2644,7 @@ export const elemination = async (roomData, io) => {
           waitingArray: updatedWaitingArray,
           $inc: { waitingArrayLength: 1 },
           rooms: filteredRooms,
+          eleminatedPlayers: updatedEleminations,
         },
         {
           new: true,
@@ -2740,6 +2746,8 @@ const finishTournamentAndGivePrizes = async (tournament) => {
         $inc: {
           wallet: tournament.winnerAmount,
         },
+        isFinished: true,
+        isStart: false,
       },
       { new: true }
     );
@@ -7587,7 +7595,10 @@ export const activateTournament = async (io) => {
         const updatedWaitingArray = [];
 
         for await (let user of waitingArray) {
-          if (rooms[rooms.length - 1].players.length < playerLimit) {
+          const room = await roomModel.findOne({
+            _id: rooms[rooms.length - 1],
+          });
+          if (room.players.length < playerLimit) {
             const updatedRoom = await addPlayerInRoom(
               rooms[rooms.length - 1],
               user,
@@ -7675,11 +7686,55 @@ const startTournamentTables = async (tournament, io) => {
   try {
     for await (let roomId of tournament.rooms) {
       console.log("tournament room id ==>", roomId);
-      await blindTimer(tournament, io);
-      await preflopround(roomId, io);
+      const room = await roomModel.findOne({ _id: roomId });
+      if (room?.players.length > 1) {
+        await blindTimer(tournament, io);
+        await preflopround(roomId, io);
+      } else {
+        await upgradeUserForNewRound(tournament, room, io);
+      }
     }
   } catch (error) {
     console.log("error in start tournmament tables", error);
+  }
+};
+
+const upgradeUserForNewRound = async (tournament, room, io) => {
+  try {
+    const { waitingArray, round, _id, rooms } = tournament;
+    const { id } = room.players[0];
+    const updatedWaitingArray = waitingArray.map((el) => {
+      if (el.id.toString() === id.toString()) {
+        el.round = round + 1;
+        el.roomId = null;
+      }
+      return el;
+    });
+    const updatedRooms = rooms.filter(
+      (room1) => room1.toString() !== room._id.toString()
+    );
+    await tournamentModel.updateOne(
+      {
+        _id: _id,
+      },
+      {
+        waitingArray: updatedWaitingArray,
+        rooms: updatedRooms,
+        $inc: {
+          waitingArrayLength: 1,
+        },
+      }
+    );
+    await Notification.create({
+      receiver: id,
+      message: "Congratulations! You have upgraded for next round.",
+    });
+    await roomModel.deleteOne({
+      _id: room._id,
+    });
+    io.emit("playerUpgraded", { userId: id });
+  } catch (error) {
+    console.log("Error in upgradeUserForNewRound ==>", error);
   }
 };
 
