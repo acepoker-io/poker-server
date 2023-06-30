@@ -2353,7 +2353,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               if (
                 roomData.tournament &&
                 roomData.tournament.eleminatedPlayers.find(
-                  (el) => el.userid.toString() === uid.toString()
+                  (el) => el.toString() === uid.toString()
                 )
               ) {
                 next();
@@ -2746,10 +2746,19 @@ const finishTournamentAndGivePrizes = async (tournament) => {
         $inc: {
           wallet: tournament.winnerAmount,
         },
-        isFinished: true,
-        isStart: false,
       },
       { new: true }
+    );
+    await tournamentModel.updateOne(
+      { _id: tournament._id },
+      {
+        isFinished: true,
+        isStart: false,
+        winPlayer: {
+          username: updatedPlayer.username,
+          id: updatedPlayer._id,
+        },
+      }
     );
     await transactionModel.create({
       userId: updatedPlayer._id,
@@ -3135,12 +3144,12 @@ export const doSitOut = async (data, io, socket) => {
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-  console.log("do sit out called ");
   const { isValid } = checkIfEmpty({ tableId, userid });
   let playingPlayer = [];
   let res = true;
   try {
     if (isValid) {
+      console.log("do sit out called ", data);
       const roomData = await roomModel
         .findOne({
           _id: tableId,
@@ -3661,9 +3670,7 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find(
-                  (all) => all.id.toString() === el.id.toString()
-                )) &&
+                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3671,6 +3678,7 @@ export const doFold = async (roomData, playerid, io) => {
           });
 
           if (playingPlayer.length === 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
             await roomModel.updateOne(
               {
                 _id: roomid,
@@ -3679,16 +3687,13 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-
-            if (!updatedRoom.allinPlayers.length) {
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-            }
-
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            // }
             res = false;
           }
           return res;
@@ -3726,9 +3731,7 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find(
-                  (all) => all.id.toString() === el.id.toString()
-                )) &&
+                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3743,15 +3746,13 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-            if (!updatedRoom.allinPlayers.length) {
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-            }
 
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
             res = false;
           }
           return res;
@@ -3788,9 +3789,7 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find(
-                  (all) => all.id.toString() === el.id.toString()
-                )) &&
+                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3805,15 +3804,13 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-            if (!updatedRoom.allinPlayers.length) {
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-            }
 
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
             res = false;
           }
           return res;
@@ -3847,6 +3844,7 @@ export const doFold = async (roomData, playerid, io) => {
           io.in(roomData._id.toString()).emit("fold", {
             updatedRoom: roomData,
           });
+
           updatedRoom.riverround.forEach((el) => {
             if (
               !el.fold &&
@@ -3860,15 +3858,16 @@ export const doFold = async (roomData, playerid, io) => {
             }
           });
           if (playingPlayer.length === 1) {
-            await roomModel.updateOne(
-              {
-                _id: roomid,
-              },
-              {
-                runninground: 5,
-              }
-            );
-            if (!updatedRoom.allinPlayers.length) {
+            if (!updatedRoom.allinPlayers?.length) {
+              await roomModel.updateOne(
+                {
+                  _id: roomid,
+                },
+                {
+                  runninground: 5,
+                }
+              );
+
               await winnerBeforeShowdown(
                 roomid,
                 playingPlayer[0].id,
@@ -3876,7 +3875,6 @@ export const doFold = async (roomData, playerid, io) => {
                 io
               );
             }
-
             res = false;
           }
           return res;
@@ -7599,11 +7597,7 @@ export const activateTournament = async (io) => {
             _id: rooms[rooms.length - 1],
           });
           if (room.players.length < playerLimit) {
-            const updatedRoom = await addPlayerInRoom(
-              rooms[rooms.length - 1],
-              user,
-              buyIn
-            );
+            const updatedRoom = await addPlayerInRoom(room, user, buyIn);
             rooms[rooms.length - 1] = updatedRoom;
           } else {
             let newRoom = await createNewRoom({
@@ -7612,16 +7606,12 @@ export const activateTournament = async (io) => {
               bigBlind,
             });
             rooms.push(newRoom);
-            const updatedRoom = await addPlayerInRoom(
-              rooms[rooms.length - 1],
-              user,
-              buyIn
-            );
+            const updatedRoom = await addPlayerInRoom(newRoom, user, buyIn);
             rooms[rooms.length - 1] = updatedRoom;
           }
           updatedWaitingArray.push({
             ...user,
-            roomId: rooms[rooms.length - 1]._id.toString(),
+            roomId: room._id.toString(),
           });
         }
         const updatedTournament = await tournamentModel.findOneAndUpdate(
@@ -7654,7 +7644,7 @@ export const activateTournament = async (io) => {
         setTimeout(async () => {
           console.log("tournament started");
           await startTournamentTables(updatedTournament, io);
-        }, 120000);
+        }, 40000);
       }
     }
 
