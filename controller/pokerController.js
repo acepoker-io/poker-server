@@ -193,7 +193,6 @@ export const getTablePlayers = async (req, res) => {
     res.status(200).send({ players: roomData.players });
   } catch (error) {
     console.log("getTablePlayers", error);
-
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -388,6 +387,7 @@ export const checkVerifyPrivateTable = async (req, res) => {
 
 export const checkUserInGame = async (req, res) => {
   try {
+    console.log("checkIfUserInGame executed");
     const inGame = await userService.checkUserAvailableInGame(req.user._id);
     if (inGame?.pokerGame) {
       let API_URL;

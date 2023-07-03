@@ -1,9 +1,14 @@
+import tournamentModel from "../../models/tournament.js";
 import pokerTournamentService from "../../service/admin/pokerTournamentService.js";
 export const CreateTournament = async (req, res, io) => {
   try {
     const response = await pokerTournamentService.CreateTournament(req.body);
     if (response) {
-      io.emit("tournamentAction", { creation: true });
+      const allTournaments = await tournamentModel.find({});
+      io.emit("tournamentAction", {
+        creation: true,
+        tournaments: allTournaments,
+      });
       return res.status(200).send({ msg: "Tournament created successfully" });
     }
   } catch (err) {
@@ -19,7 +24,11 @@ export const updateTournament = async (req, res, io) => {
       req.body
     );
     if (response) {
-      io.emit("tournamentAction", { creation: true });
+      const allTournaments = await tournamentModel.find({});
+      io.emit("tournamentAction", {
+        creation: true,
+        tournaments: allTournaments,
+      });
       return res.status(200).send(response);
     }
   } catch (err) {

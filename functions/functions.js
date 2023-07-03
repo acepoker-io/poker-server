@@ -2701,7 +2701,7 @@ const reScheduleAnotherRound = async (tournament) => {
       (el) => el.round && el.round === tournament.round + 1
     );
 
-    if (waitingArray.length === 1) {
+    if (waitingArray.length === 1 || waitingArray.length === 0) {
       await finishTournamentAndGivePrizes(tournament);
       return true;
     }
