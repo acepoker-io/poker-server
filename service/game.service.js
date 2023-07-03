@@ -315,6 +315,7 @@ const sendNotificationsAndUpdateTournament = async (allTournaments) => {
     )}:${getDoubleDigit(startDate.getMinutes())}`;
 
     console.log("tourament start date ==>", startDate);
+    const startTimeCount = new Date(startDate).getTime();
 
     const notificationPromise = waitingArray
       .filter((el) => el.id)
@@ -333,6 +334,7 @@ const sendNotificationsAndUpdateTournament = async (allTournaments) => {
         },
         {
           startTime: startDate,
+          startTimeCount: startTimeCount,
         }
       ),
     ];
@@ -352,12 +354,15 @@ const checkPlayerLimitHasReached = async () => {
       startDate.getHours()
     )}:${getDoubleDigit(startDate.getMinutes())}`;
     console.log("startDate ===>", startDate);
+
+    const crrntTimeCount = new Date(startDate).getTime();
+
     const allTournaments = await tournamentModel.findOne({
       $and: [
         {
           $where: "this.waitingArrayLength >= this.minimumPlayers",
         },
-        { startTime: startDate },
+        { startTimeCount: { $lte: crrntTimeCount } },
         { $where: "this.havePlayers !== this.waitingArrayLength" },
         { isStart: false },
       ],

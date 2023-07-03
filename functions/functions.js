@@ -2697,7 +2697,11 @@ export const elemination = async (roomData, io) => {
 
 const reScheduleAnotherRound = async (tournament) => {
   try {
-    if (tournament.waitingArray.length === 2) {
+    const waitingArray = tournament.waitingArray.filter(
+      (el) => el.round && el.round === tournament.round + 1
+    );
+
+    if (waitingArray.length === 1) {
       await finishTournamentAndGivePrizes(tournament);
       return true;
     }
@@ -2710,9 +2714,6 @@ const reScheduleAnotherRound = async (tournament) => {
       startDate.getHours()
     )}:${getDoubleDigit(startDate.getMinutes())}`;
     console.log("tournament round ==>", tournament.round);
-    const waitingArray = tournament.waitingArray.filter(
-      (el) => el.round && el.round === tournament.round + 1
-    );
 
     console.log("waitingArray filtered", waitingArray, tournament.waitingArray);
 
@@ -2749,6 +2750,7 @@ const finishTournamentAndGivePrizes = async (tournament) => {
       },
       { new: true }
     );
+    console.log("Tournament data ", tournament);
     await tournamentModel.updateOne(
       { _id: tournament._id },
       {
@@ -7564,9 +7566,10 @@ export const activateTournament = async (io) => {
     )}:${getDoubleDigit(startDate.getMinutes())}`;
 
     // console.log("satrt date ==>", startDate);
+    const crrntTimeCount = new Date(startDate).getTime();
 
     const checkTournaments = await tournamentModel.find({
-      startTime: startDate,
+      startTimeCount: { $lte: crrntTimeCount },
       $where: "this.waitingArrayLength === this.havePlayers",
       isStart: false,
     });
