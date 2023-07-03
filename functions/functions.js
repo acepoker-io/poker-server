@@ -7566,6 +7566,7 @@ export const activateTournament = async (io) => {
     // console.log("satrt date ==>", startDate);
 
     const checkTournaments = await tournamentModel.find({
+      startTime: startDate,
       $where: "this.waitingArrayLength === this.havePlayers",
       isStart: false,
     });
