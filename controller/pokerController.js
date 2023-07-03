@@ -403,6 +403,10 @@ export const checkUserInGame = async (req, res) => {
         reJoinUrl: `${req.headers.origin}/table?gamecollection=poker&tableid=${inGame?.pokerGame?._id}`,
         leaveTable: `${API_URL}/leaveGame/${inGame?.pokerGame?._id}/${req.user._id}`,
       });
+    } else {
+      res.status(404).json({
+        inGame: false,
+      });
     }
   } catch (err) {
     console.log("error in check user in game :", inGame);
