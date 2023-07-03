@@ -76,17 +76,15 @@ const uploadUserProfile = async (file, user) => {
   }
   return false;
 };
-const checkUserAvailableInGame=async(userId)=>{
-  const promiseData = (await Promise.allSettled([
-    roomModel.findOne({"players.userid": userId}),
-  ]))
-  const [
-    pokerGame,
-  ] = promiseData.map((el) => el.value);
+const checkUserAvailableInGame = async (userId) => {
+  const promiseData = await Promise.allSettled([
+    roomModel.findOne({ "players.userid": userId, tournament: null }),
+  ]);
+  const [pokerGame] = promiseData.map((el) => el.value);
   return {
     pokerGame: pokerGame,
   };
-}
+};
 const userService = {
   getUserById,
   updateUserWallet,
@@ -94,7 +92,7 @@ const userService = {
   createUser,
   updateUserById,
   uploadUserProfile,
-  checkUserAvailableInGame
+  checkUserAvailableInGame,
 };
 
 export default userService;
