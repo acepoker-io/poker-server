@@ -72,17 +72,17 @@ const getAllUsers = async (query) => {
   } else {
     search = {};
   }
-
-  const users = await User.find(search, {
-    firstName: 1,
-    lastName: 1,
-    email: 1,
-    profile: 1,
-    username: 1,
-    phone: 1,
-    wallet: 1,
-    isBlock: 1,
-  })
+  // , {
+  //   firstName: 1,
+  //   lastName: 1,
+  //   email: 1,
+  //   profile: 1,
+  //   username: 1,
+  //   phone: 1,
+  //   wallet: 1,
+  //   isBlock: 1,
+  // }
+  const users = await User.find(search)
     .skip(skip)
     .limit(limit)
     .sort({ _id: -1 });
