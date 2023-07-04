@@ -2482,7 +2482,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   tournament: roomData.tournament,
                   buyin: buyin,
                   sitin: sitin,
-                  leavereq: leavereq,
+                  leavereq: [],
                 },
                 {
                   new: true,
@@ -3589,7 +3589,9 @@ export const doLeaveTable = async (data, io, socket) => {
           );
         }
         let leavereq = roomdata.leavereq;
-        leavereq.push(userid);
+        if (roomdata.gamestart) {
+          leavereq.push(userid);
+        }
 
         const updatedData = await roomModel.findOneAndUpdate(
           { _id: roomid },
