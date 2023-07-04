@@ -96,9 +96,9 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
             },
           },
           hostId,
-          $pull: {
-            leavereq: converMongoId(userId),
-          },
+          // $pull: {
+          //   leavereq: converMongoId(userId),
+          // },
         }
       ),
     ]);
