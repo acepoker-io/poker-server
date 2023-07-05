@@ -25,12 +25,12 @@ const verifyCallback =
     resolve();
   };
 
-let cnt = 0;
+// let cnt = 0;
 
 const auth =
   (...requiredRights) =>
   async (req, res, next) => {
-    console.log("authenticate executed --->", cnt++);
+    // console.log("authenticate executed --->", cnt++);
     return new Promise((resolve, reject) => {
       passport.authenticate(
         "jwt",
@@ -39,7 +39,11 @@ const auth =
       )(req, res, next);
     })
       .then(() => next())
-      .catch((err) => next(err));
+      .catch((err) =>
+        res.status(400).send({
+          message: "Please authenticate",
+        })
+      );
   };
 
 export default auth;
