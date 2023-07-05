@@ -30,6 +30,7 @@ import {
   JoinTournament,
   checkAlreadyInGame,
   getTableById,
+  leaveTournament,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
@@ -339,6 +340,10 @@ let returnSocket = (io) => {
 
     socket.on("joinTournament", async (data) => {
       await JoinTournament(data, io, socket);
+    });
+
+    socket.on("leaveTournament", async (data) => {
+      await leaveTournament(data, io, socket);
     });
 
     socket.on("getRoomDataById", async (data) => {

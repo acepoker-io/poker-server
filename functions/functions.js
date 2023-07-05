@@ -3548,6 +3548,11 @@ export const doLeaveTable = async (data, io, socket) => {
       if (roomdata) {
         console.log("IN ROOM DATA ====>");
         roomid = roomdata._id;
+        if (roomdata?.tournament) {
+          console.log("tournamentLeave");
+          return socket.emit("tournamentLeave");
+        }
+
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
@@ -7225,6 +7230,7 @@ export const checkForGameTable = async (data, socket, io) => {
     }
     const { players } = game;
     if (players.find((el) => el.userid?.toString() === userId.toString())) {
+      console.log("player found ==========>");
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
       const gameUpdatedData = await roomModel.findOneAndUpdate(
@@ -7543,6 +7549,9 @@ export const JoinTournament = async (data, io, socket) => {
       prevWallet: parseFloat(userData?.wallet),
       updatedWallet: updatedUser?.wallet,
       transactionType: "poker tournament",
+    });
+    socket.emit("userUpdate", {
+      user: updatedUser,
     });
     return socket.emit("alreadyInTournament", {
       message: "You joined in game.",
@@ -7993,5 +8002,55 @@ export const getTableById = async (tableId, io, socket) => {
     io.in(tableId).emit("getRoomDataById", table);
   } catch (err) {
     console.log("error in get table by id ===>", err);
+  }
+};
+
+export const leaveTournament = async (data, io, socket) => {
+  try {
+    console.log("leave tournament data", data);
+    const { user, tournamentId } = data;
+    const tournament = await tournamentModel.findOne({ _id: tournamentId });
+    if (tournament) {
+      if (tournament.isStart) {
+        return socket.emit("status", {
+          code: 400,
+          message: "Tournament is already running",
+        });
+      }
+
+      const { waitingArray } = tournament;
+      const filteredWaitingArray = waitingArray.filter(
+        (el) => el.id.toString() !== user.id.toString()
+      );
+      await tournamentModel.updateOne(
+        { _id: tournamentId },
+        {
+          waitingArray: filteredWaitingArray,
+          $inc: { waitingArrayLength: -1 },
+        }
+      );
+      const updatedUser = await userModel.findOneAndUpdate(
+        {
+          _id: convertMongoId(user.id.toString()),
+        },
+        {
+          $inc: {
+            wallet: Number(tournament.tournamentFee),
+          },
+        },
+        { new: true }
+      );
+      const alltournaments = await tournamentModel.find({}).sort({ _id: -1 });
+      socket.emit("status", {
+        code: 200,
+        message: "Successfully exit from tournament",
+      });
+      socket.emit("userUpdate", {
+        user: updatedUser,
+      });
+      socket.emit("updatedTournaments", { tournaments: alltournaments });
+    }
+  } catch (error) {
+    console.log("error in leaveTournament", error);
   }
 };
