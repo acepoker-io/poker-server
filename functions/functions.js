@@ -958,7 +958,7 @@ export const prefloptimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(udata?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 1,
@@ -1208,7 +1208,7 @@ export const flopTimer = async (roomid, io) => {
                     data?.lastAction === "check") &&
                   data?.players.length !== 1
                 ) {
-                  await doCheck(roomid, intervalPlayer[0].id, io);
+                  await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
                   const isContinue = await doFold(
@@ -1240,7 +1240,7 @@ export const flopTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 2,
@@ -1516,7 +1516,7 @@ export const turnTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 3,
@@ -1796,7 +1796,7 @@ export const riverTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 4,
@@ -7653,12 +7653,12 @@ export const activateTournament = async (io) => {
             startDate: null,
           });
         });
-        Promise.allSettled(notifications);
+        await Promise.allSettled(notifications);
 
-        setTimeout(async () => {
-          console.log("tournament started");
-          await startTournamentTables(updatedTournament, io);
-        }, 40000);
+        // setTimeout(async () => {
+        console.log("tournament started");
+        await startTournamentTables(updatedTournament, io);
+        // }, 40000);
       }
     }
 
@@ -7690,13 +7690,38 @@ const startTournamentTables = async (tournament, io) => {
   try {
     for await (let roomId of tournament.rooms) {
       console.log("tournament room id ==>", roomId);
-      const room = await roomModel.findOne({ _id: roomId });
-      if (room?.players.length > 1) {
-        await blindTimer(tournament, io);
-        await preflopround(roomId, io);
-      } else {
-        await upgradeUserForNewRound(tournament, room, io);
-      }
+      let count = 120;
+      let getMinute = 2 * 60;
+      const intrval = setInterval(async () => {
+        if (count > 0) {
+          const mm =
+            getMinute / 60 < 10
+              ? `0${parseInt(getMinute / 60, 10)}`
+              : `${parseInt(getMinute / 60, 10)}`;
+          const ss =
+            getMinute % 60 < 10
+              ? `0${parseInt(getMinute % 60, 10)}`
+              : `${parseInt(getMinute % 60, 10)}`;
+          const time = `${mm}:${ss}`;
+          // rooms.forEach((room) => {
+          io.in(roomId.toString()).emit("blindTimer", {
+            time,
+          });
+          // });
+          getMinute -= 1;
+          count--;
+        } else {
+          console.log("clear inter val executed");
+          const room = await roomModel.findOne({ _id: roomId });
+          if (room?.players.length > 1) {
+            await blindTimer(tournament, io);
+            await preflopround(roomId, io);
+          } else {
+            await upgradeUserForNewRound(tournament, room, io);
+          }
+          clearInterval(intrval);
+        }
+      }, 1000);
     }
   } catch (error) {
     console.log("error in start tournmament tables", error);
