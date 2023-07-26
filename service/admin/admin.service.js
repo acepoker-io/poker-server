@@ -331,6 +331,550 @@ const updateUserWallet = async (id, body) => {
   return { status: 200, msg: "Wallet updated successfully" };
 };
 
+const depositWithdrawalReport = async (query) => {
+  const { fromDate, toDate, page, limit, sortBy, searchKey } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+  let filterObject = {};
+  let searchObj = {};
+  if (searchKey) {
+    searchObj = {
+      $or: [
+        { "userId.username": { $regex: searchKey, $options: "i" } },
+        { "userId.firstName": { $regex: searchKey, $options: "i" } },
+        { "userId.lastName": { $regex: searchKey, $options: "i" } },
+        { "userId.email": { $regex: searchKey, $options: "i" } },
+      ],
+    };
+    // const user = await User.find(searchObj);
+    // filterObject.userId = { $in: user.map(e => e._id)};
+    filterObject = searchObj;
+  }
+
+  let sortByColumn = {};
+  if (sortBy) {
+    if (sortBy.includes("totalWithdrawal")) {
+      sortByColumn.totalWithdrawal = sortBy.includes("asc") ? 1 : -1;
+    }
+    if (sortBy.includes("totalDeposit")) {
+      sortByColumn.totalDeposit = sortBy.includes("asc") ? 1 : -1;
+    }
+  } else {
+    sortByColumn.totalDeposit = -1;
+  }
+  const mandatory = {
+    $and: [
+      {
+        userId: {
+          $exists: true,
+        },
+      },
+      { userId: { $exists: true } },
+    ],
+  };
+  filterObject = {
+    ...mandatory,
+    ...filterObject,
+    transactionType: { $in: ["deposit", "withdraw"] },
+  };
+
+  if (fromDate && toDate) {
+    filterObject.createdAt = {
+      $gte: new Date(fromDate),
+      $lt: new Date(toDate),
+    };
+  }
+  console.log("filterObject ==>", filterObject);
+
+  let depositfilterArray = ["deposit"];
+  let withdrawalfilterArray = ["withdraw"];
+  const popularData = await transactionModel
+    .aggregate([
+      {
+        $match: filterObject,
+      },
+      {
+        $group: {
+          _id: "$userId",
+          // userProfile: { $first: "$userId.profile" },
+          // username: { $first: "$userId.username" },
+          totalDeposit: {
+            $sum: {
+              $cond: {
+                if: { $in: ["$transactionType", depositfilterArray] },
+                then: { $sum: "$amount" },
+                else: 0,
+              },
+            },
+          },
+          totalWithdrawal: {
+            $sum: {
+              $cond: {
+                if: { $in: ["$transactionType", withdrawalfilterArray] },
+                then: { $sum: "$amount" },
+                else: 0,
+              },
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "user", // The name of the collection to join with.
+          localField: "userId", // The field from the input documents.
+          foreignField: "_id", // The field from the foreign collection.
+          as: "userId", // The name of the new array field to store the results.
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          totalDeposit: 1,
+          totalWithdrawal: 1,
+          username: 1,
+          userProfile: 1,
+        },
+      },
+      { $sort: sortByColumn },
+    ])
+    .skip(skip)
+    .limit(Number(limit));
+
+  const count = await transactionModel.aggregate([
+    {
+      $match: filterObject,
+    },
+    {
+      $group: {
+        _id: "$userId",
+        // userProfile: { $first: "$userId.profile" },
+        // username: { $first: "$userId.username" },
+        totalDeposit: {
+          $sum: {
+            $cond: {
+              if: { $in: ["$transactionType", depositfilterArray] },
+              then: { $sum: "$amount" },
+              else: 0,
+            },
+          },
+        },
+        totalWithdrawal: {
+          $sum: {
+            $cond: {
+              if: { $in: ["$transactionType", withdrawalfilterArray] },
+              then: { $sum: "$amount" },
+              else: 0,
+            },
+          },
+        },
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        totalDeposit: 1,
+        totalWithdrawal: 1,
+        username: 1,
+        userProfile: 1,
+      },
+    },
+    { $count: "total" },
+  ]);
+  const totalPages = Math.ceil(count[0]?.total / limit);
+
+  return {
+    data: popularData,
+    count: count[0]?.total || 0,
+    totalPages: totalPages || 0,
+  };
+};
+
+const reportMembers = async (query) => {
+  const { type, fromDate, toDate, page, limit, sortBy, searchKey } = query;
+  let array = ["poker", "poker tournament"];
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  let sortByColumn = {};
+  if (sortBy) {
+    if (sortBy.includes("totalBet")) {
+      sortByColumn.totalBet = sortBy.includes("asc") ? 1 : -1;
+    }
+    if (sortBy.includes("ticket")) {
+      sortByColumn.ticket = sortBy.includes("asc") ? 1 : -1;
+    }
+    if (sortBy.includes("goldCoin")) {
+      sortByColumn.goldCoin = sortBy.includes("asc") ? 1 : -1;
+    }
+    if (sortBy.includes("wallet")) {
+      sortByColumn.wallet = sortBy.includes("asc") ? 1 : -1;
+    }
+  } else {
+    if (type === "Inactive") {
+      sortByColumn.totalBet = 1;
+    } else {
+      sortByColumn.totalBet = -1;
+    }
+  }
+  let filterObject = {};
+  if (fromDate && toDate) {
+    filterObject.createdAt = {
+      $gte: new Date(fromDate),
+      $lt: new Date(toDate),
+    };
+  }
+  let searchObj = {};
+  if (searchKey) {
+    if (type === "Not Played") {
+      searchObj = {
+        $or: [
+          { username: { $regex: searchKey, $options: "i" } },
+          { firstName: { $regex: searchKey, $options: "i" } },
+          { lastName: { $regex: searchKey, $options: "i" } },
+          { email: { $regex: searchKey, $options: "i" } },
+        ],
+      };
+    } else {
+      searchObj = {
+        $or: [
+          { "userId.username": { $regex: searchKey, $options: "i" } },
+          { "userId.firstName": { $regex: searchKey, $options: "i" } },
+          { "userId.lastName": { $regex: searchKey, $options: "i" } },
+          { "userId.email": { $regex: searchKey, $options: "i" } },
+        ],
+      };
+    }
+    filterObject = searchObj;
+    // const user = await User.find(searchObj);
+    // if(type === 'Not Played')
+    // {
+    //   filterObject._id = { $in: user.map(e => e._id)}
+    // }
+    // else{
+    //   filterObject.userId = { $in: user.map(e => e._id)}
+    // }
+  }
+
+  if (type === "Not Played") {
+    filterObject.transactions = { $size: 0 };
+    const notPlayedUsers = await User.aggregate([
+      {
+        $lookup: {
+          from: "transactions",
+          localField: "_id",
+          foreignField: "userId",
+          as: "transactions",
+        },
+      },
+      {
+        $match: filterObject,
+      },
+      { $sort: sortByColumn },
+    ])
+      .skip(skip)
+      .limit(Number(limit));
+
+    const count = await User.aggregate([
+      {
+        $lookup: {
+          from: "transactions",
+          localField: "_id",
+          foreignField: "userId",
+          as: "transactions",
+        },
+      },
+      {
+        $match: filterObject,
+      },
+      {
+        $count: "total",
+      },
+    ]);
+    const totalPages = Math.ceil(count[0]?.total / limit);
+    return {
+      data: notPlayedUsers,
+      count: count[0]?.total || 0,
+      totalPages: totalPages || 0,
+    };
+  } else if (type === "Active") {
+    filterObject.transactionType = { $in: array };
+    const mandatory = {
+      $and: [
+        {
+          userId: {
+            $exists: true,
+          },
+        },
+        { userId: { $exists: true } },
+      ],
+    };
+    filterObject = { ...mandatory, ...filterObject };
+
+    const playedUsers = await transactionModel
+      .aggregate([
+        {
+          $match: filterObject,
+        },
+        {
+          $group: {
+            _id: "$userId",
+            // userProfile: { $first: "$userId.profile" },
+            // username: { $first: "$userId.username" },
+            count: { $sum: 1 },
+            totalBet: {
+              $sum: {
+                $cond: {
+                  if: { $in: ["$transactionType", array] },
+                  then: 1,
+                  else: 0,
+                },
+              },
+            },
+            wallet: {
+              $sum: {
+                $subtract: [
+                  {
+                    $convert: {
+                      input: "$updatedWallet",
+                      to: "int",
+                      onError: 0,
+                      onNull: 0,
+                    },
+                  },
+                  {
+                    $convert: {
+                      input: "$prevWallet",
+                      to: "int",
+                      onError: 0,
+                      onNull: 0,
+                    },
+                  },
+                ],
+              },
+            },
+            // ticket: {
+            //   $sum: {
+            //     $subtract: [
+            //       {
+            //         $convert: {
+            //           input: "$updatedTicket",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //       {
+            //         $convert: {
+            //           input: "$prevTicket",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //     ],
+            //   },
+            // },
+            // goldCoin: {
+            //   $sum: {
+            //     $subtract: [
+            //       {
+            //         $convert: {
+            //           input: "$updatedGoldCoin",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //       {
+            //         $convert: {
+            //           input: "$prevGoldCoin",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //     ],
+            //   },
+            // },
+          },
+        },
+        {
+          $lookup: {
+            from: "user",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userId",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            count: 1,
+            totalBet: 1,
+            username: 1,
+            wallet: 1,
+            // goldCoin: 1,
+            // ticket: 1,
+            // userProfile: 1,
+          },
+        },
+        { $sort: sortByColumn },
+      ])
+      .skip(skip)
+      .limit(Number(limit));
+
+    const count = await transactionModel.aggregate([
+      {
+        $match: {
+          transactionType: { $in: array },
+          createdAt: {
+            $gte: new Date(fromDate),
+            $lte: new Date(toDate),
+          },
+        },
+      },
+      { $group: { _id: "$userId", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $count: "total" },
+    ]);
+    const totalPages = Math.ceil(count[0]?.total / limit);
+    return {
+      data: playedUsers,
+      count: count[0]?.total || 0,
+      totalPages: totalPages || 0,
+    };
+  } else if (type === "Inactive") {
+    filterObject.transactionType = { $in: array };
+    const playedUsers = await transactionModel
+      .aggregate([
+        {
+          $match: filterObject,
+        },
+        {
+          $group: {
+            _id: "$userId",
+            // userProfile: { $first: "$userId.profile" },
+            // username: { $first: "$userId.username" },
+            count: { $sum: 1 },
+            totalBet: {
+              $sum: {
+                $cond: {
+                  if: { $in: ["$transactionType", array] },
+                  then: 1,
+                  else: 0,
+                },
+              },
+            },
+            wallet: {
+              $sum: {
+                $subtract: [
+                  {
+                    $convert: {
+                      input: "$updatedWallet",
+                      to: "int",
+                      onError: 0,
+                      onNull: 0,
+                    },
+                  },
+                  {
+                    $convert: {
+                      input: "$prevWallet",
+                      to: "int",
+                      onError: 0,
+                      onNull: 0,
+                    },
+                  },
+                ],
+              },
+            },
+            // ticket: {
+            //   $sum: {
+            //     $subtract: [
+            //       {
+            //         $convert: {
+            //           input: "$updatedTicket",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //       {
+            //         $convert: {
+            //           input: "$prevTicket",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //     ],
+            //   },
+            // },
+            // goldCoin: {
+            //   $sum: {
+            //     $subtract: [
+            //       {
+            //         $convert: {
+            //           input: "$updatedGoldCoin",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //       {
+            //         $convert: {
+            //           input: "$prevGoldCoin",
+            //           to: "int",
+            //           onError: 0,
+            //           onNull: 0,
+            //         },
+            //       },
+            //     ],
+            //   },
+            // },
+          },
+        },
+        {
+          $lookup: {
+            from: "user",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userId",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            count: 1,
+            totalBet: 1,
+            username: 1,
+            wallet: 1,
+            // goldCoin: 1,
+            // ticket: 1,
+            // userProfile: 1,
+          },
+        },
+        { $sort: sortByColumn },
+      ])
+      .skip(skip)
+      .limit(Number(limit));
+
+    const count = await transactionModel.aggregate([
+      {
+        $match: filterObject,
+      },
+      { $group: { _id: "$userId", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $count: "total" },
+    ]);
+    const totalPages = Math.ceil(count[0]?.total / limit);
+    return {
+      data: playedUsers,
+      count: count[0]?.total,
+      totalPages: totalPages || 0,
+    };
+  }
+};
+
 // const CreateTournament = async (userBody) => {
 //   console.log({ userBody });
 //   const user = await tournamentModel.create(userBody);
@@ -416,5 +960,7 @@ const adminService = {
   allTransaction,
   updateUserWallet,
   createUser,
+  depositWithdrawalReport,
+  reportMembers,
 };
 export default adminService;

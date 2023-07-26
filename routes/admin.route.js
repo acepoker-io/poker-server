@@ -18,6 +18,8 @@ import {
   blockUser,
   createUser,
   deleteUser,
+  depositAndWithdrawalReport,
+  reportMembers,
 } from "../controller/admin/admin.controler.js";
 import authValidation from "../validation/auth.validation.js";
 import validate from "../middlewares/validate.js";
@@ -57,6 +59,9 @@ const adimRoute = (io) => {
 
   router.put("/block-user/:id", auth(), blockUser);
   router.delete("/delete-user/:id", auth(), deleteUser);
+  router.get("/depositWithdrawalReport", auth(), depositAndWithdrawalReport);
+
+  router.get("/reportMembers", auth(), reportMembers);
 
   return router;
 };
