@@ -385,6 +385,30 @@ export const uploadProfile = catchAsync(async (req, res, next) => {
 //   return res.status(200).send(response);
 // });
 
+export const depositAndWithdrawalReport = catchAsync(async (req, res, next) => {
+  let admin = req.user.roles;
+
+  const response = await adminService.depositWithdrawalReport(req.query);
+  res.send({
+    report: response.data,
+    count: response.count,
+    totalPages: response.totalPages,
+  });
+});
+
+export const reportMembers = catchAsync(async (req, res, next) => {
+  let admin = req.user.roles;
+  // if (!admin.reportManagement) {
+  //   return res.send({ msg: "You don't have permission to access this api" });
+  // }
+  const response = await adminService.reportMembers(req.query);
+  res.send({
+    report: response.data,
+    count: response.count,
+    totalPages: response.totalPages,
+  });
+});
+
 const adminController = {
   adminLogin,
   getLettestUser,
@@ -396,8 +420,10 @@ const adminController = {
   uploadProfile,
   updateUser,
   blockUser,
+  depositAndWithdrawalReport,
   // checkAdmin,
   // dashboardCount,
   getAllUsersForInvite,
+  reportMembers,
 };
 export default adminController;
