@@ -6804,60 +6804,71 @@ const createTransactionFromUsersArray = async (
 
       let handsTransaction = [];
       if (!tournament) {
-        handsTransaction = el.hands.map((elem) => {
-          console.log({ elem });
-          const prvAmt = updatedAmount + userwallets[i];
-          if (elem.action === "game-lose") {
-            console.log("GAME LOSE");
-            totalLossAmount += elem.amount;
-            updatedAmount -= elem.amount;
-            totalLose++;
-          } else {
-            console.log("GAME WIN");
-            updatedAmount += elem.amount;
-            totalWinAmount += elem.amount;
-            totalWin++;
-          }
-          // updatedAmount -= elem.amount;
-          // Get each transaction last and update wallet amount
-          console.log(
-            "update amount: ------------------------------------------------>",
-            updatedAmount
-          );
-
-          const gameWinOrLoseamount =
-            elem.action === "game-lose" ? -elem.amount : elem.amount;
-          // const lastAmount = updatedAmount + usersWalltAmt[i];
-          // const prevTickets = userTickets[i];
-          // const crrTicket =
-          //   userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
-          // userTickets[i] = crrTicket;
-          // updatedAmount = updatedAmount + gameWinOrLoseamount;
-          console.log("updated amount ----->", updatedAmount);
-
-          return {
-            userId,
-            roomId,
-            amount:
-              gameWinOrLoseamount >= 0
-                ? gameWinOrLoseamount * 2
-                : gameWinOrLoseamount,
-            // transactionDetails: {},
-            prevWallet: prvAmt,
-            updatedWallet:
-              updatedAmount > 0
-                ? (updatedAmount + userwallets[i]) * 2
-                : updatedAmount + userwallets[i],
-            transactionType: "poker",
-            // prevTicket: prevTickets,
-            // updatedTicket: crrTicket,
-          };
+        handsTransaction.push({
+          userId,
+          roomId,
+          amount: (el.coinsBeforeJoin - el.wallet) * -1,
+          prevWallet: userwallets[i] + el.coinsBeforeJoin,
+          updatedWallet: userwallets[i] + el.wallet,
+          transactionType: "poker",
         });
+
+        // handsTransaction = el.hands.map((elem) => {
+        //   console.log({ elem });
+        //   const prvAmt = updatedAmount + userwallets[i];
+        //   if (elem.action === "game-lose") {
+        //     console.log("GAME LOSE");
+        //     totalLossAmount += elem.amount;
+        //     updatedAmount -= elem.amount;
+        //     totalLose++;
+        //   } else {
+        //     console.log("GAME WIN");
+        //     updatedAmount += elem.amount;
+        //     totalWinAmount += elem.amount;
+        //     totalWin++;
+        //   }
+        //   // updatedAmount -= elem.amount;
+        //   // Get each transaction last and update wallet amount
+        //   console.log(
+        //     "update amount: ------------------------------------------------>",
+        //     updatedAmount
+        //   );
+
+        //   const gameWinOrLoseamount =
+        //     elem.action === "game-lose" ? -elem.amount : elem.amount;
+        //   // const lastAmount = updatedAmount + usersWalltAmt[i];
+        //   // const prevTickets = userTickets[i];
+        //   // const crrTicket =
+        //   //   userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
+        //   // userTickets[i] = crrTicket;
+        //   // updatedAmount = updatedAmount + gameWinOrLoseamount;
+        //   console.log("updated amount ----->", updatedAmount);
+
+        //   return {
+        //     userId,
+        //     roomId,
+        //     amount:
+        //       gameWinOrLoseamount >= 0
+        //         ? gameWinOrLoseamount * 2
+        //         : gameWinOrLoseamount,
+        //     // transactionDetails: {},
+        //     prevWallet: prvAmt,
+        //     updatedWallet:
+        //       updatedAmount > 0
+        //         ? (updatedAmount + userwallets[i]) * 2
+        //         : updatedAmount + userwallets[i],
+        //     transactionType: "poker",
+        //     // prevTicket: prevTickets,
+        //     // updatedTicket: crrTicket,
+        //   };
+        // });
         // userTransactions.push({
         //   address: el?.metaMaskAddress,
         //   amount: el?.wallet,
         // });
       }
+
+      console.log("Hands transaction ==>", { handsTransaction });
 
       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
 
