@@ -265,6 +265,14 @@ const createKyc = catchAsync(async (req, res) => {
   });
 });
 
+const getAllFriends = async (req, res) => {
+  const response = await userService.getAllFriends();
+  if (!response) {
+    throw new ApiError(httpStatus.NOT_FOUND, "users not found");
+  }
+  return res.status(200).send(response);
+};
+
 const userController = {
   createUser,
   getUsers,
@@ -280,5 +288,6 @@ const userController = {
   getKycDetails,
   createKyc,
   loginWithMetamask,
+  getAllFriends,
 };
 export default userController;

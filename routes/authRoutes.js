@@ -5,5 +5,6 @@ import user_AuthController from "../controller/user_Auth/user_AuthController.js"
 const router = express.Router();
 router.post("/register", user_AuthController.createUser);
 router.post("/loginWithMetamask", user_AuthController.loginWithMetamask);
+router.get("/getAllFriends", user_AuthController.getAllFriends);
 
 export default router;

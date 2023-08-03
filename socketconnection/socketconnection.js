@@ -35,6 +35,7 @@ import {
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
 import { connetToLanding, landingSocket } from "./landing_Connection";
+import Message from "../models/messageModal.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -45,6 +46,11 @@ let returnSocket = (io) => {
   io.users = [];
   io.room = [];
   io.on("connection", async (socket) => {
+    socket.on("join", async (userId) => {
+      socket.join(userId);
+      console.log("userIduserIduserId", userId);
+      io.in(userId).emit("userConnectedWithSever");
+    });
     connetToLanding(socket);
     console.log("sockket connecteds");
     socket.on("room", (roomData) => {
@@ -302,6 +308,73 @@ let returnSocket = (io) => {
       io.in(data.tableId.toString()).emit("newMessage", data);
       await UpdateRoomChat(data, socket, io);
     });
+    socket.on("newchatMessage", async (msg) => {
+      console.log("msg===>>>", msg);
+      await Message.create({
+        message: msg.message,
+        sender: msg.sender,
+        receiver: msg.receiver,
+      });
+      const messages = await Message.find({
+        $or: [
+          { receiver: msg.receiver, sender: msg.sender },
+          { sender: msg.receiver, receiver: msg.sender },
+        ],
+      })
+        .populate({
+          path: "sender",
+          select: { firstName: 1, profile: 1, username: 1 },
+        })
+        .populate({
+          path: "receiver",
+          select: { firstName: 1, profile: 1, username: 1 },
+        })
+        .sort({ _id: -1 })
+        .limit(1);
+      console.log("msg?.sender", msg?.sender);
+      //const count = await Notification.countDocuments({ receiver: msg.sender,isRead: false });
+      // io.in(msg?.receiver?.toString()).emit("message", { ...messages[0]._doc });
+      // io.in(msg.sender.toString()).emit("message", { ...messages[0]._doc });
+      // io.to(msg.sender.toString()).emit("message", {
+      //   ...messages[0]._doc,
+      // });
+      // io.to("64cb319fbab80c5524769300").emit("message", {
+      //   ...messages[0]._doc,
+      // });
+
+      io.emit("message", {
+        ...messages[0]._doc,
+      });
+    });
+
+    // socket.on("sendNotification", async (notification) => {
+    //   await Notification.create({
+    //     message: notification.message,
+    //     sender: notification.sender,
+    //     receiver: notification.receiver,
+    //   });
+
+    //   let user = connectedUsers.getUserByUserName(
+    //     notification.recipientUserName
+    //   );
+    //   if (user?.id) {
+    //     const notifications = await Notification.find({
+    //       receiver: notification.receiver,
+    //     })
+    //       .populate({
+    //         path: "sender",
+    //         select: { firstName: 1, profile: 1, username: 1 },
+    //       })
+    //       .populate({
+    //         path: "receiver",
+    //         select: { firstName: 1, profile: 1, username: 1 },
+    //       })
+    //       .sort({ _id: -1 })
+    //       .limit(1);
+
+    //     ioServer.to(user.id).emit("notification", notifications);
+    //   }
+    // });
 
     socket.on("invPlayers", async (data) => {
       InvitePlayers(data, socket, io);

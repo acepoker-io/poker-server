@@ -85,6 +85,15 @@ const checkUserAvailableInGame = async (userId) => {
     pokerGame: pokerGame,
   };
 };
+
+const getAllFriends = async (req, res, next) => {
+  const users = await User.find({});
+  if (!users) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found!");
+  }
+  return { users };
+};
+
 const userService = {
   getUserById,
   updateUserWallet,
@@ -93,6 +102,7 @@ const userService = {
   updateUserById,
   uploadUserProfile,
   checkUserAvailableInGame,
+  getAllFriends,
 };
 
 export default userService;
