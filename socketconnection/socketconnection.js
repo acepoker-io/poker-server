@@ -36,6 +36,9 @@ import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
 import { connetToLanding, landingSocket } from "./landing_Connection";
 import Message from "../models/messageModal.js";
+import NotificationModel from "../models/notificationModal.js";
+import connectedUsers from "../socketconnection/connected-user.js";
+import User from "../landing-server/models/user.model";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -47,9 +50,16 @@ let returnSocket = (io) => {
   io.room = [];
   io.on("connection", async (socket) => {
     socket.on("join", async (userId) => {
-      socket.join(userId);
-      console.log("userIduserIduserId", userId);
-      io.in(userId).emit("userConnectedWithSever");
+      if (userId) {
+        const userDetail = await User.findOne({ _id: userId }, { username: 1 });
+        console.log("userDetail", socket?.id, userId, userDetail?.username);
+        if (userDetail) {
+          connectedUsers.userJoin(socket?.id, userId, userDetail?.username);
+        }
+
+        socket.join(userId);
+        io.in(userId).emit("userConnectedWithSever");
+      }
     });
     connetToLanding(socket);
     console.log("sockket connecteds");
@@ -347,34 +357,36 @@ let returnSocket = (io) => {
       });
     });
 
-    // socket.on("sendNotification", async (notification) => {
-    //   await Notification.create({
-    //     message: notification.message,
-    //     sender: notification.sender,
-    //     receiver: notification.receiver,
-    //   });
+    socket.on("sendNotification", async (notification) => {
+      console.log("notification", notification);
+      await NotificationModel.create({
+        message: notification.message,
+        sender: notification.sender,
+        receiver: notification.receiver,
+      });
 
-    //   let user = connectedUsers.getUserByUserName(
-    //     notification.recipientUserName
-    //   );
-    //   if (user?.id) {
-    //     const notifications = await Notification.find({
-    //       receiver: notification.receiver,
-    //     })
-    //       .populate({
-    //         path: "sender",
-    //         select: { firstName: 1, profile: 1, username: 1 },
-    //       })
-    //       .populate({
-    //         path: "receiver",
-    //         select: { firstName: 1, profile: 1, username: 1 },
-    //       })
-    //       .sort({ _id: -1 })
-    //       .limit(1);
+      let user = connectedUsers.getUserByUserName(
+        notification.recipientUserName
+      );
+      console.log("user===>>>.jivan", user);
+      if (user?.id) {
+        const notifications = await NotificationModel.find({
+          receiver: notification.receiver,
+        })
+          .populate({
+            path: "sender",
+            select: { firstName: 1, profile: 1, username: 1 },
+          })
+          .populate({
+            path: "receiver",
+            select: { firstName: 1, profile: 1, username: 1 },
+          })
+          .sort({ _id: -1 })
+          .limit(1);
 
-    //     ioServer.to(user.id).emit("notification", notifications);
-    //   }
-    // });
+        io.to(user.id).emit("notification", notifications);
+      }
+    });
 
     socket.on("invPlayers", async (data) => {
       InvitePlayers(data, socket, io);
