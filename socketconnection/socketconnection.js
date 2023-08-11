@@ -315,6 +315,7 @@ let returnSocket = (io) => {
     });
 
     socket.on("chatMessage", async (data) => {
+      console.log("roomChat",data);
       io.in(data.tableId.toString()).emit("newMessage", data);
       await UpdateRoomChat(data, socket, io);
     });
