@@ -7382,7 +7382,9 @@ export const UpdateRoomChat = async (data, socket, io) => {
     if (room) {
       const user = await userModel.findOne({ _id: userId });
 
-      const { firstName, lastName, profile } = user || {};
+
+      const {profile,username } = user || {};
+      console.log("user",user);
       await roomModel.findOneAndUpdate(
         { _id: tableId },
         {
@@ -7390,8 +7392,7 @@ export const UpdateRoomChat = async (data, socket, io) => {
             chats: {
               message: message,
               userId: userId,
-              firstName: firstName,
-              lastName: lastName,
+              firstName: username,
               profile,
               date: new Date().toLocaleTimeString(),
               seenBy: [],
