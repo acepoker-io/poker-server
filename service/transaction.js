@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import dotenv from "dotenv";
 import axios from "axios";
 import WPT_ABI from "../config/WPT_ABI.json";
+import transactionModel from "../models/transaction";
 // import { ThirdwebSDK } from "@thirdweb-dev/sdk/evm";
 
 dotenv.config();
@@ -77,21 +78,29 @@ export const getTransactionReceiptByHash = async (hash) => {
   }
 };
 
-export const getTransactionByHash = async (hash, userAddress) => {
+export const getTransactionByHash = async (res, hash, userAddress) => {
   try {
-    const transaction = await sdk.getProvider().getTransaction(hash);
-    console.log("transaction", transaction);
+    const recipt = await sdk.getProvider().getTransaction(hash);
+    // console.log("transaction", recipt);
 
-    if (userAddress !== transaction?.from) {
+    if (userAddress === recipt?.from) {
+      return false;
+    }
+
+    let getBlock = await transactionModel.findOne({
+      "transactionDetails.blockNumber": recipt?.blockNumber,
+    });
+    // console.log("getBlock", getBlock);
+    if (getBlock?.transactionDetails?.blockNumber === recipt?.blockNumber) {
       return false;
     }
     // const value = ethers.BigNumber.from(transaction.value);
     // console.log("valueeeeee ===>", value);
-    const transactionAmt = await getDecodedData(transaction);
+    const transactionAmt = await getDecodedData(recipt);
     // const data = JSON.parse(ethers.utils.toUtf8String(transaction.data));
-    // console.log("transaction data", data);
+    // console.log("transaction data");
     // transaction.value;
-    return transactionAmt;
+    return { transactionAmt, recipt };
   } catch (error) {
     console.log("error in getTransactionReceiptByHash", error);
   }

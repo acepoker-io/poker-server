@@ -63,17 +63,19 @@ const pokerRoute = (io) => {
       const { txhash, amount, userId } = req.body;
       const userbeforeupdation = await User.findOne({ _id: userId });
 
-      const transaction = await getTransactionByHash(
+      const { transactionAmt, recipt } = await getTransactionByHash(
+        res,
         txhash,
         userbeforeupdation.metaMaskAddress
       );
+      console.log("recipt", recipt);
       // transaction = transaction * 10
       // console.log("transaction response ==>", transaction);
       // const transactionEth = ethers.utils.formatEther(transaction?.value);
       // const amntInDollar = await convertEthToUsd(transaction);
-      console.log("transaction amount ==>", transaction, amount);
-      if (!transaction || transaction !== parseFloat(amount)) {
-        return res.status(401).send({
+      console.log("transaction amount ==>", transactionAmt, amount);
+      if (!transactionAmt || transactionAmt !== parseFloat(amount)) {
+        return res.status(404).send({
           success: false,
           message: "Invalid transaction",
         });
@@ -98,6 +100,7 @@ const pokerRoute = (io) => {
           prevWallet: userbeforeupdation.wallet,
           updatedWallet: user.wallet,
           transactionType: "deposit",
+          transactionDetails: recipt,
         });
         return res.status(200).send({
           success: true,
