@@ -22,6 +22,7 @@ const transactionSchema = new Schema(
         "updated by admin",
         "poker tournament",
         "poker",
+        "Withdraw Request Rejected By Admin",
       ],
     },
     prevTicket: { type: Number },

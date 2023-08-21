@@ -7,6 +7,7 @@ import transactionModel from "../../models/transaction.js";
 // import User from "../../models/userModel.js";
 import ApiError from "../../landing-server/utils/ApiError.js";
 import User from "../../landing-server/models/user.model.js";
+import withdrawRequest from "../../models/withdrawRequest.model.js";
 
 const blockUser = async (id) => {
   const users = await User.findOne({ _id: id }, { isBlock: 1 });
@@ -950,6 +951,92 @@ const reportMembers = async (query) => {
 //   return { code: 200, message };
 // };
 
+const getAllWithdrawData = async (query) => {
+  try {
+    const page = Number(query.page);
+    const limit = Number(query.limit);
+    let filterObj = {};
+    let searchObj = {};
+    let option = {
+      populate: "redeemId,userId",
+      sortBy: "_id:desc",
+      limit,
+      page,
+    };
+    if (query?.filter) {
+      filterObj = {
+        status: query?.filter,
+      };
+    }
+    if (query?.searchKey) {
+      searchObj = {
+        username: { $regex: query.searchKey, $options: "i" },
+      };
+      const user = await User.find(searchObj);
+      filterObj.userId = { $in: user.map((e) => e._id) };
+    }
+
+    if (query.sortBy) {
+      option.sortBy = query.sortBy;
+    }
+
+    console.log("option", option);
+
+    const requestPrize = await withdrawRequest.paginate(filterObj, option);
+    return { requestPrize };
+  } catch (error) {
+    console.log("error", error);
+    res.status(500).json({
+      status: "error",
+      RedeemPrize: {},
+    });
+  }
+};
+
+const rejectWithdrawRequest = async (params, res) => {
+  try {
+    const { redeem_id } = params;
+    let findRedeem = await withdrawRequest
+      .findOne({ _id: redeem_id })
+      .populate("userId");
+    const { userId, amount } = findRedeem;
+    if (!userId) {
+      return { status: 404, msg: "User not found" };
+    }
+    let findUpdate = await User.findOneAndUpdate(
+      { _id: userId?._id },
+      {
+        $inc: {
+          wallet: parseInt(amount),
+        },
+      },
+      { new: true }
+    );
+
+    if (findUpdate) {
+      await withdrawRequest.findOneAndUpdate(
+        { _id: redeem_id },
+        {
+          $set: { status: "Rejected" },
+        }
+      );
+      transactionModel.create({
+        userId,
+        amount,
+        prevWallet: findUpdate.wallet,
+        updatedWallet: findUpdate.wallet,
+        transactionType: "Withdraw Request Rejected By Admin",
+      });
+      return { status: 200, msg: "Rejected successfully", user: findUpdate };
+    }
+  } catch (error) {
+    console.log("error", error);
+    res.status(500).json({
+      status: "error",
+    });
+  }
+};
+
 const adminService = {
   getAllUsers,
   blockUser,
@@ -962,5 +1049,7 @@ const adminService = {
   createUser,
   depositWithdrawalReport,
   reportMembers,
+  getAllWithdrawData,
+  rejectWithdrawRequest,
 };
 export default adminService;

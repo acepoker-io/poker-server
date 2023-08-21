@@ -194,10 +194,70 @@ const getAllTournament = async (query) => {
   return { tournament, count };
 };
 
+const getAllWithdrawData = async (query) => {
+  try {
+    const page = Number(query.page);
+    const limit = Number(query.limit);
+    let filterObj = {};
+    let searchObj = {};
+    let option = {
+      populate: "redeemId,userId",
+      sortBy: "_id:desc",
+      limit,
+      page,
+    };
+    if (query?.filter) {
+      filterObj = {
+        status: query?.filter,
+      };
+    }
+    if (query?.searchKey) {
+      searchObj = {
+        username: { $regex: query.searchKey, $options: "i" },
+      };
+      const user = await User.find(searchObj);
+      filterObj.userId = { $in: user.map((e) => e._id) };
+    }
+
+    if (query.sortBy) {
+      option.sortBy = query.sortBy;
+    }
+
+    console.log("option", option);
+
+    const requestPrize = await WithdrawRequest.paginate(filterObj, option);
+    // let rpp=requestPrize.results.map((el,i)=>el)=>{
+    //   requestPrize.results[i].timeData=(new mongoose.Types.ObjectId(el._id)).getTimestamp()
+    // })
+    const newData = {
+      ...requestPrize,
+    };
+
+    newData.results = newData?.results?.map((el, i) => {
+      el["timeData"] = new mongoose.Types.ObjectId(
+        el._id.toString()
+      ).getTimestamp();
+      return el;
+    });
+
+    // console.log('newData', newData);
+    // let filter = newData?.results.filter((el) => el.userId !== null);
+    // newData.results = filter;
+
+    return { requestPrize: newData };
+  } catch (error) {
+    console.log("error", error);
+    res.status(500).json({
+      status: "error",
+      RedeemPrize: {},
+    });
+  }
+};
 const pokerTournamentService = {
   CreateTournament,
   updateTournament,
   deleteTournament,
   getAllTournament,
+  getAllWithdrawData,
 };
 export default pokerTournamentService;

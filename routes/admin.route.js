@@ -20,6 +20,8 @@ import {
   deleteUser,
   depositAndWithdrawalReport,
   reportMembers,
+  getAllWithdrawRequest,
+  rejectWithdrawRequest,
 } from "../controller/admin/admin.controler.js";
 import authValidation from "../validation/auth.validation.js";
 import validate from "../middlewares/validate.js";
@@ -62,6 +64,8 @@ const adimRoute = (io) => {
   router.get("/depositWithdrawalReport", auth(), depositAndWithdrawalReport);
 
   router.get("/reportMembers", auth(), reportMembers);
+  router.get("/getAllWithdrawRequest", auth(), getAllWithdrawRequest);
+  router.get("/rejectWithdrawRequest", auth(), rejectWithdrawRequest);
 
   return router;
 };

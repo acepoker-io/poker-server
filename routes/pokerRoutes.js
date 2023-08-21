@@ -118,13 +118,21 @@ const pokerRoute = (io) => {
     }
   });
 
-  router.post("/withdrawTransaction", auth(), async (req, res) => {
+  router.post("/withdrawTransaction", async (req, res) => {
     try {
       console.log("body ===>", req.body);
-      const { userId, amount } = req.body;
-      const user = await User.findOne({ _id: userId });
-      console.log("useruser", user);
-      if (user.wallet < amount) {
+      const { withdraw_id } = req.body;
+      const getWithDraw = await withdrawRequestModel
+        .findOne({
+          _id: withdraw_id,
+        })
+        .populate("userId");
+      const {
+        userId: { id },
+        amount,
+      } = getWithDraw;
+      const user = await User.findOne({ _id: id });
+      if (user?.wallet < amount) {
         return res.status(401).send({
           success: false,
           message: "You do not have enough balance",
