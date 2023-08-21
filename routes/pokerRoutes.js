@@ -23,6 +23,7 @@ import { ethers } from "ethers";
 import User from "../landing-server/models/user.model.js";
 import transactionModel from "../models/transaction.js";
 import { getAllTournament } from "../controller/admin/pokerTournament.controller.js.js";
+import withdrawRequestModel from "../models/withdrawRequest.model.js";
 
 const router = express.Router();
 const pokerRoute = (io) => {
@@ -122,6 +123,7 @@ const pokerRoute = (io) => {
       console.log("body ===>", req.body);
       const { userId, amount } = req.body;
       const user = await User.findOne({ _id: userId });
+      console.log("useruser", user);
       if (user.wallet < amount) {
         return res.status(401).send({
           success: false,
@@ -168,6 +170,69 @@ const pokerRoute = (io) => {
         success: true,
         message: "Withdraw successfull",
         user: updatedUser,
+      });
+    } catch (e) {
+      console.log("error in getDepositTransaction", e);
+      res.status(400).send({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  });
+
+  router.post("/withdrawRequsetTransaction", auth(), async (req, res) => {
+    try {
+      console.log("body ===>", req.body);
+      const { userId, amount } = req.body;
+      const user = await User.findOne({ _id: userId });
+      console.log("useruser", user);
+      if (user.wallet < amount) {
+        return res.status(401).send({
+          success: false,
+          message: "You do not have enough balance",
+        });
+      }
+
+      const userbeforeupdation = await User.findOne({
+        _id: userId,
+      });
+
+      const updatedUser = await User.findOneAndUpdate(
+        {
+          _id: userId,
+        },
+        {
+          $inc: {
+            wallet: amount * -1,
+          },
+        },
+        { new: true }
+      );
+
+      await transactionModel.create({
+        userId,
+        amount,
+        prevWallet: userbeforeupdation.wallet,
+        updatedWallet: updatedUser.wallet,
+        transactionType: "withdraw",
+      });
+
+      //  Start with requset functionality
+
+      const WithdrwaPayload = {
+        status: "pending",
+        address: user?.metaMaskAddress,
+        amount: amount,
+        userId: userId,
+      };
+
+      await withdrawRequestModel.create(WithdrwaPayload);
+      return res.status(200).send({
+        success: true,
+        message: "Withdraw request send successfully to admin",
+        user: updatedUser,
+
+        // end withdraw request
       });
     } catch (e) {
       console.log("error in getDepositTransaction", e);
