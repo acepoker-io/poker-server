@@ -6,10 +6,8 @@ const withdrawRequestSchema = mongoose.Schema(
     address: {
       type: String,
     },
-    redeemId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Prize",
-    },
+    amount: { type: Number },
+
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
