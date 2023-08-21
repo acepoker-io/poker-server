@@ -3679,7 +3679,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3740,7 +3742,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3798,7 +3802,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -5326,7 +5332,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         break;
     }
     playerData.forEach((e) => {
-      winnerAmount += e.prevPot;
+      winnerAmount += e.pot;
       let p = {
         cards: e.cards,
         id: e.id,
@@ -5357,7 +5363,19 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       showDownPlayers.push(p);
     });
 
+    winnerAmount += roomData.pot;
+
+    if (roomData.sidePots.length || roomData.allinPlayers.length) {
+      let sidePotTotal = roomData.sidePots.reduce((acc, el) => acc + el.pot, 0);
+      console.log("sidePotTotal ==>", sidePotTotal);
+      if (sidePotTotal) {
+        winnerAmount = sidePotTotal;
+        console.log("winnet amount", winnerAmount);
+      }
+    }
+
     console.log("roomData.pot", roomData.pot, roomData.sidePots, winnerAmount);
+
     let commision = 0;
     if (!roomData.tournament) {
       commision = parseFloat(winnerAmount) * commisionPersentage;
@@ -5376,8 +5394,6 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 
     const winningAmount = winnerAmount - totalPlayerTablePot;
 
-    if (!roomData.pot && (!roomData.sidePots || !roomData.sidePots?.length)) {
-    }
     console.log(
       "winning amount ==>",
       winningAmount,
@@ -7382,9 +7398,8 @@ export const UpdateRoomChat = async (data, socket, io) => {
     if (room) {
       const user = await userModel.findOne({ _id: userId });
 
-
-      const {profile,username } = user || {};
-      console.log("user",user);
+      const { profile, username } = user || {};
+      console.log("user", user);
       await roomModel.findOneAndUpdate(
         { _id: tableId },
         {
