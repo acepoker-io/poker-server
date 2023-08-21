@@ -409,6 +409,15 @@ export const reportMembers = catchAsync(async (req, res, next) => {
   });
 });
 
+export const getAllWithdrawRequest = async (req, res) => {
+  const response = await adminService.getAllWithdrawData(req.query);
+  return res.status(200).send(response);
+};
+export const rejectWithdrawRequest = async (req, res) => {
+  const response = await adminService.rejectWithdrawRequest(req.query, res);
+  return res.status(200).send(response);
+};
+
 const adminController = {
   adminLogin,
   getLettestUser,
@@ -425,5 +434,6 @@ const adminController = {
   // dashboardCount,
   getAllUsersForInvite,
   reportMembers,
+  getAllWithdrawRequest,
 };
 export default adminController;
