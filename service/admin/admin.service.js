@@ -398,7 +398,7 @@ const depositWithdrawalReport = async (query) => {
         $group: {
           _id: "$userId",
           // userProfile: { $first: "$userId.profile" },
-          // username: { $first: "$userId.username" },
+          username: { $first: "$userId.username" },
           totalDeposit: {
             $sum: {
               $cond: {
@@ -421,10 +421,10 @@ const depositWithdrawalReport = async (query) => {
       },
       {
         $lookup: {
-          from: "user", // The name of the collection to join with.
-          localField: "userId", // The field from the input documents.
+          from: "users", // The name of the collection to join with.
+          localField: "_id", // The field from the input documents.
           foreignField: "_id", // The field from the foreign collection.
-          as: "userId", // The name of the new array field to store the results.
+          as: "user", // The name of the new array field to store the results.
         },
       },
       {
@@ -432,8 +432,7 @@ const depositWithdrawalReport = async (query) => {
           _id: 1,
           totalDeposit: 1,
           totalWithdrawal: 1,
-          username: 1,
-          userProfile: 1,
+          username: { $arrayElemAt: ["$user.username", 0] },
         },
       },
       { $sort: sortByColumn },
@@ -620,8 +619,6 @@ const reportMembers = async (query) => {
         {
           $group: {
             _id: "$userId",
-            // userProfile: { $first: "$userId.profile" },
-            // username: { $first: "$userId.username" },
             count: { $sum: 1 },
             totalBet: {
               $sum: {
@@ -702,22 +699,22 @@ const reportMembers = async (query) => {
         },
         {
           $lookup: {
-            from: "user",
-            localField: "userId",
+            from: "users",
+            localField: "_id",
             foreignField: "_id",
-            as: "userId",
+            as: "user",
           },
         },
+        // {
+        //   $unwind: "$user", // Unwind the user array created by the $lookup stage
+        // },
         {
           $project: {
             _id: 1,
             count: 1,
             totalBet: 1,
-            username: 1,
             wallet: 1,
-            // goldCoin: 1,
-            // ticket: 1,
-            // userProfile: 1,
+            username: "$user.username",
           },
         },
         { $sort: sortByColumn },
