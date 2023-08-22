@@ -705,9 +705,9 @@ const reportMembers = async (query) => {
             as: "user",
           },
         },
-        // {
-        //   $unwind: "$user", // Unwind the user array created by the $lookup stage
-        // },
+        {
+          $unwind: "$user", // Unwind the user array created by the $lookup stage
+        },
         {
           $project: {
             _id: 1,
