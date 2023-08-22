@@ -329,7 +329,7 @@ app.get("/user/notificationCount", auth(), async (req, res) => {
     const { _id } = req.user;
     // console.log("_id", _id);
     const counts = await Notification.countDocuments({
-      $and: [{ receiver: _id.toString() }, { seen: false }],
+      $and: [{ receiver: _id.toString() }, { isRead: false }],
     });
     // console.log(counts);
     return res.status(200).send({ counts });
@@ -343,14 +343,29 @@ app.get("/user/seenAllNotifications", auth(), async (req, res) => {
   try {
     const { _id } = req.user;
     // console.log("_id", _id);
-    const counts = await Notification.updateMany(
+    // const counts = await Notification.updateMany(
+    //   {
+    //     $and: [{ receiver: _id.toString() }, { seen: false }],
+    //   },
+    //   { seen: true }
+    // );
+    const up = await Notification.updateMany(
+      { receiver: _id.toString() },
       {
-        $and: [{ receiver: _id.toString() }, { seen: false }],
+        $set: {
+          isRead: true,
+        },
       },
-      { seen: true }
+      { upsert: false }
     );
     // console.log(counts);
-    return res.status(200).send({ counts });
+    if (up.nModified) {
+      const counts = await Notification.countDocuments({
+        receiver: _id.toString(),
+        isRead: false,
+      });
+      return res.status(200).send({ counts });
+    }
   } catch (error) {
     console.log(error);
     return res.status(500).send({ msg: "Internal server error" });

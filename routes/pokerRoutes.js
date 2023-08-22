@@ -151,12 +151,12 @@ const pokerRoute = (io) => {
       }
 
       const userbeforeupdation = await User.findOne({
-        _id: userId,
+        _id: id,
       });
 
       const updatedUser = await User.findOneAndUpdate(
         {
-          _id: userId,
+          _id: id,
         },
         {
           $inc: {
@@ -167,11 +167,16 @@ const pokerRoute = (io) => {
       );
 
       await transactionModel.create({
-        userId,
+        id,
         amount,
         prevWallet: userbeforeupdation.wallet,
         updatedWallet: updatedUser.wallet,
         transactionType: "withdraw",
+      });
+
+      await Notification.create({
+        receiver: id,
+        message: `Withdraw request accept By Admin for ${amount}`,
       });
 
       return res.status(200).send({
