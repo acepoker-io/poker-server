@@ -8,6 +8,7 @@ import transactionModel from "../../models/transaction.js";
 import ApiError from "../../landing-server/utils/ApiError.js";
 import User from "../../landing-server/models/user.model.js";
 import withdrawRequest from "../../models/withdrawRequest.model.js";
+import Notification from "../../models/notificationModal.js";
 
 const blockUser = async (id) => {
   const users = await User.findOne({ _id: id }, { isBlock: 1 });
@@ -1026,6 +1027,11 @@ const rejectWithdrawRequest = async (params, res) => {
         prevWallet: findUpdate.wallet,
         updatedWallet: findUpdate.wallet,
         transactionType: "Withdraw Request Rejected By Admin",
+      });
+
+      await Notification.create({
+        receiver: userId,
+        message: `Withdraw request rejected By Admin for ${amount}`,
       });
       return { status: 200, msg: "Rejected successfully", user: findUpdate };
     }
